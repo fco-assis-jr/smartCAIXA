@@ -7,6 +7,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
+/**
+ * @group fortify
+ */
 class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;

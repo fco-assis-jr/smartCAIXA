@@ -18,6 +18,7 @@ Route::get('login', [CustomLoginController::class, 'showLoginForm'])
     ->middleware('guest');
 
 Route::post('login', [CustomLoginController::class, 'login'])
+    ->name('login.store')
     ->middleware(['guest', 'throttle:5,1']); // Máximo 5 tentativas por minuto
 
 Route::post('logout', [CustomLoginController::class, 'logout'])

@@ -8,6 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
+/**
+ * @group fortify
+ */
 class VerificationNotificationTest extends TestCase
 {
     use RefreshDatabase;

@@ -8,6 +8,9 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
+/**
+ * @group fortify
+ */
 class TwoFactorAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
