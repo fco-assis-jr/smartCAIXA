@@ -40,7 +40,7 @@
     },
     "scripts": {
         "setup": [
-            "composer install",
+            "composer install --ignore-platform-req=ext-oci8",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
@@ -95,6 +95,7 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "platform-check": false,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
