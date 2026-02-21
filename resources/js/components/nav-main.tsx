@@ -28,11 +28,6 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                 {items.map((item) => {
                     // If item has subitems, render collapsible menu
                     if (item.items && item.items.length > 0) {
-                        // Check if any subitem is active
-                        const hasActiveSubItem = item.items.some(
-                            (subItem) => subItem.href && isCurrentUrl(subItem.href)
-                        );
-
                         return (
                             <Collapsible
                                 key={item.title}
