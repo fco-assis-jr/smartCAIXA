@@ -11,7 +11,6 @@ class ProdutoController extends Controller
     /**
      * Buscar produto por código auxiliar ou código de produto
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function buscarPorCodigo(Request $request)
@@ -43,7 +42,7 @@ class ProdutoController extends Controller
                 })
                 ->first();
 
-            if (!$produto) {
+            if (! $produto) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Produto não encontrado',
@@ -74,7 +73,7 @@ class ProdutoController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Erro ao buscar produto',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar o produto. Tente novamente.',
             ], 500);
         }
     }
@@ -82,7 +81,6 @@ class ProdutoController extends Controller
     /**
      * Buscar produtos com filtros customizados
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function search(Request $request)
@@ -113,22 +111,22 @@ class ProdutoController extends Controller
                 ->whereNull('P.DTEXCLUSAO');
 
             // Filtro por filial
-            if (!empty($validated['codFilial'])) {
+            if (! empty($validated['codFilial'])) {
                 $query->where('E.CODFILIAL', $validated['codFilial']);
             }
 
             // Filtro por descrição
-            if (!empty($validated['descricao'])) {
-                $query->where('P.DESCRICAO', 'like', '%' . $validated['descricao'] . '%');
+            if (! empty($validated['descricao'])) {
+                $query->where('P.DESCRICAO', 'like', '%'.$validated['descricao'].'%');
             }
 
             // Filtro por código auxiliar
-            if (!empty($validated['codAuxiliar'])) {
+            if (! empty($validated['codAuxiliar'])) {
                 $query->where('E.CODAUXILIAR', $validated['codAuxiliar']);
             }
 
             // Filtro por código de produto
-            if (!empty($validated['codProd'])) {
+            if (! empty($validated['codProd'])) {
                 $query->where('E.CODPROD', $validated['codProd']);
             }
 
@@ -168,7 +166,7 @@ class ProdutoController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Erro ao buscar produtos',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar os produtos. Tente novamente.',
             ], 500);
         }
     }
@@ -176,8 +174,7 @@ class ProdutoController extends Controller
     /**
      * Buscar produto específico por código de produto
      *
-     * @param string $codProd
-     * @param Request $request
+     * @param  string  $codProd
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($codProd, Request $request)
@@ -205,7 +202,7 @@ class ProdutoController extends Controller
                 ->where('E.CODPROD', $codProd)
                 ->first();
 
-            if (!$produto) {
+            if (! $produto) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Produto não encontrado',
@@ -235,7 +232,7 @@ class ProdutoController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Erro ao buscar produto',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar o produto. Tente novamente.',
             ], 500);
         }
     }
