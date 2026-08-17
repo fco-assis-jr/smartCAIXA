@@ -32,6 +32,26 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Sessão expirada / usuário não autenticado tentando acessar rota protegida.
+        // Sem isso, o catch-all de \Throwable no final deste arquivo intercepta a
+        // AuthenticationException antes do Laravel conseguir redirecionar pro login
+        // — e em produção (APP_DEBUG=false) isso aparecia como "500 Erro do Servidor"
+        // em vez da tela de login, sempre que a sessão caía (ex.: depois de logout).
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Sessão expirada. Faça login novamente.'], 401);
+            }
+
+            // Requisições Inertia precisam de um 409 + X-Inertia-Location pra fazer
+            // uma navegação completa até o login — um redirect comum não funciona
+            // corretamente dentro do fluxo de visita do Inertia.
+            if ($request->header('X-Inertia')) {
+                return Inertia::location(route('login'));
+            }
+
+            return redirect()->guest(route('login'));
+        });
+
         // Tratamento customizado para erro 429 (Too Many Requests / Rate Limit)
         $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, $request) {
             if ($request->expectsJson()) {
@@ -42,8 +62,8 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return back()->withErrors([
-                'usuario' => 'Muitas tentativas de login. Por favor, aguarde ' .
-                    ($e->getHeaders()['Retry-After'] ?? 60) .
+                'usuario' => 'Muitas tentativas de login. Por favor, aguarde '.
+                    ($e->getHeaders()['Retry-After'] ?? 60).
                     ' segundos antes de tentar novamente.',
             ])->onlyInput('usuario');
         });
@@ -107,7 +127,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             // Em produção, mostrar página de erro genérica
-            if (!config('app.debug')) {
+            if (! config('app.debug')) {
                 return Inertia::render('errors/500')
                     ->toResponse($request)
                     ->setStatusCode(500);
