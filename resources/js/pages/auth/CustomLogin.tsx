@@ -67,8 +67,8 @@ export default function CustomLoginPage() {
                             </h2>
                             <p className="text-sidebar-foreground/65">
                                 Baixas de estoque, consulta de vendas e
-                                reconexão de caixas — tudo integrado ao ERP, num
-                                só lugar.
+                                reconexão de caixas — tudo integrado ao Winthor,
+                                num só lugar.
                             </p>
 
                             <div className="space-y-2.5 border-t border-sidebar-border pt-6 font-mono text-sm text-sidebar-foreground/70">
@@ -82,7 +82,7 @@ export default function CustomLoginPage() {
                                     <span className="text-sidebar-primary">
                                         &gt;
                                     </span>{' '}
-                                    Consulta de vendas integrada ao ERP
+                                    Consulta de vendas integrada ao Winthor
                                 </p>
                                 <p>
                                     <span className="text-sidebar-primary">
@@ -94,7 +94,7 @@ export default function CustomLoginPage() {
                         </div>
 
                         <p className="font-mono text-xs text-sidebar-foreground/40">
-                            Autenticação validada diretamente no ERP.
+                            Autenticação validada diretamente no Winthor.
                         </p>
                     </div>
                 </div>
