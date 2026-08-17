@@ -283,21 +283,15 @@ export const gerarPDFBaixaProduto = async ({
     // A ordem aqui é real, não decorativa: é o caminho físico que o papel
     // percorre — de quem recebe a mercadoria até a baixa efetivada no caixa
     // — por isso a numeração 01–05 carrega informação, não é enfeite.
-    const assinaturas = [
-        { papel: 'Recebido por', detalhe: 'conferência inicial dos itens' },
-        { papel: 'Recepcionista', detalhe: 'registro de entrada da baixa' },
-        { papel: 'Gerente', detalhe: 'aprovação da baixa' },
-        { papel: 'Financeiro / Patrimônio', detalhe: 'lançamento contábil' },
-        { papel: 'Financeiro / Caixa', detalhe: 'baixa efetivada no caixa' },
-    ];
-    const espacamento = 16;
+    const assinaturas = ['Recebido por', 'Recepcionista', 'Gerente', 'Financeiro / Patrimônio', 'Financeiro / Caixa'];
+    const espacamento = 13;
 
     garantirEspaco(assinaturas.length * espacamento + 16);
     cursorY += 12;
     desenharEyebrow(doc, 'ASSINATURAS', margin, cursorY, larguraUtil);
     cursorY += 10;
 
-    assinaturas.forEach((item, indice) => {
+    assinaturas.forEach((papel, indice) => {
         const numero = String(indice + 1).padStart(2, '0');
 
         doc.setFont('courier', 'bold');
@@ -308,16 +302,11 @@ export const gerarPDFBaixaProduto = async ({
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...COR_TINTA);
-        doc.text(item.papel, margin + 10, cursorY);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(...COR_CINZA);
-        doc.text(item.detalhe, margin + 10, cursorY + 4.5);
+        doc.text(papel, margin + 10, cursorY);
 
         doc.setDrawColor(...COR_LINHA_ASSINATURA);
         doc.setLineWidth(0.3);
-        doc.line(margin + 60, cursorY + 6, pageWidth - margin, cursorY + 6);
+        doc.line(margin + 60, cursorY + 2, pageWidth - margin, cursorY + 2);
 
         cursorY += espacamento;
     });
