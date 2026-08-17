@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { PackageMinus, Receipt, ScanBarcode, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +20,7 @@ import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { gerarPDFBaixaProduto } from '@/lib/gerar-pdf-baixa';
 import { dashboard } from '@/routes';
 import baixaProduto from '@/routes/baixa-produto';
+import type { SharedData } from '@/types';
 
 type Produto = {
     CODPROD: string;
@@ -45,6 +46,7 @@ type AlertState = {
 };
 
 export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
+    const { auth } = usePage<SharedData>().props;
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [produtoEncontrado, setProdutoEncontrado] = useState<Produto | null>(
         null,
@@ -213,6 +215,7 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                 produtos,
                 observacao: data.observacao,
                 totalGeral,
+                operador: auth.user.name,
             });
 
             // Limpar após gerar PDF
