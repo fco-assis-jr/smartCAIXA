@@ -22,6 +22,13 @@ export function CustomLoginForm({
         remember: false,
     });
 
+    // 'usuario' e 'senha' compartilham o mesmo banner de erro — a maioria
+    // das falhas (credenciais inválidas, rate limit) vem em 'usuario', mas
+    // erros de validação da própria senha (obrigatória, tamanho) vêm em
+    // 'senha', e sem isso o formulário ficava mudo nesse caso (parecia que
+    // o botão não fazia nada).
+    const mensagemErro = errors.usuario || errors.senha;
+
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isRateLimited, setIsRateLimited] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -103,7 +110,7 @@ export function CustomLoginForm({
                     </p>
                 </div>
 
-                {errors.usuario && (
+                {mensagemErro && (
                     <div
                         className={cn(
                             'rounded-lg border p-4 text-sm',
@@ -124,7 +131,7 @@ export function CustomLoginForm({
                                         ? 'Muitas tentativas de login'
                                         : 'Erro de autenticação'}
                                 </p>
-                                <p>{errors.usuario}</p>
+                                <p>{mensagemErro}</p>
                                 {countdown !== null && countdown > 0 && (
                                     <div className="mt-3 flex items-center gap-2 rounded-md bg-warning/20 px-3 py-2">
                                         <Clock className="size-4 animate-pulse" />
@@ -165,7 +172,7 @@ export function CustomLoginForm({
                         placeholder="Digite sua senha"
                         required
                         autoComplete="current-password"
-                        className={errors.usuario ? 'border-destructive' : ''}
+                        className={errors.senha ? 'border-destructive' : ''}
                     />
                 </Field>
 

@@ -26,12 +26,16 @@ class CustomLoginController extends Controller
     {
         $request->validate([
             'usuario' => 'required|string|max:100',
-            'senha' => 'required|string|min:6|max:100',
+            // Sem min: aqui de propósito — a senha real (SENHABD no Oracle)
+            // pode ter menos de 6 caracteres (ex. PIN numérico), e é o
+            // próprio CRYPT() do Oracle que valida a senha corretamente;
+            // impor um mínimo arbitrário no Laravel só bloqueava logins
+            // válidos antes mesmo de consultar o banco.
+            'senha' => 'required|string|max:100',
         ], [
             'usuario.required' => 'O usuário é obrigatório.',
             'usuario.max' => 'O usuário não pode ter mais de 100 caracteres.',
             'senha.required' => 'A senha é obrigatória.',
-            'senha.min' => 'A senha deve ter no mínimo 6 caracteres.',
             'senha.max' => 'A senha não pode ter mais de 100 caracteres.',
         ]);
 

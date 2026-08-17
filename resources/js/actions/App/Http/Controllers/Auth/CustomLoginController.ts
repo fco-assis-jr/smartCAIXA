@@ -134,7 +134,7 @@ login.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     login.form = loginForm
 /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:138
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:142
  * @route '/logout'
  */
 export const logout = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -149,7 +149,7 @@ logout.definition = {
 
 /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:138
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:142
  * @route '/logout'
  */
 logout.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ logout.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:138
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:142
  * @route '/logout'
  */
 logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -168,7 +168,7 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:138
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:142
  * @route '/logout'
  */
     const logoutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -178,7 +178,7 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:138
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:142
  * @route '/logout'
  */
         logoutForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
