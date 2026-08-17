@@ -283,7 +283,7 @@ export const gerarPDFBaixaProduto = async ({
     // A ordem aqui é real, não decorativa: é o caminho físico que o papel
     // percorre — de quem recebe a mercadoria até a baixa efetivada no caixa
     // — por isso a numeração 01–05 carrega informação, não é enfeite.
-    const assinaturas = ['Recebido por', 'Recepcionista', 'Gerente', 'Financeiro / Patrimônio', 'Financeiro / Caixa'];
+    const assinaturas = ['Recebido por', 'Recepcionista', 'Gerente', 'Fiscal Patrimônio', 'Fiscal de Caixa'];
     const espacamento = 13;
 
     garantirEspaco(assinaturas.length * espacamento + 16);
