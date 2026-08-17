@@ -3,6 +3,9 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
     Calendar as CalendarIcon,
     ChevronDown,
     ChevronUp,
@@ -101,8 +104,45 @@ const TIPO_BUSCA_LABEL: Record<TipoBusca, string> = {
     gramatura: 'Peso (gramatura)',
 };
 
+// Colunas ordenáveis clicando no título. "VALOR" não existe na venda —
+// é o total (QT x PUNIT) calculado na hora de ordenar/exibir.
+type ColunaOrdenacao =
+    | 'CODAUXILIAR'
+    | 'CODPROD'
+    | 'DESCRICAO'
+    | 'QT'
+    | 'PUNIT'
+    | 'VALOR'
+    | 'NUMNOTA'
+    | 'CAIXA'
+    | 'HORA'
+    | 'NOME';
+
+const paraNumero = (valor: number | string | undefined): number => {
+    const numero = typeof valor === 'string' ? parseFloat(valor) : valor;
+    return typeof numero === 'number' && !isNaN(numero) ? numero : 0;
+};
+
+const valorVenda = (venda: Venda) => paraNumero(venda.QT) * paraNumero(venda.PUNIT);
+
+const chaveOrdenacao = (venda: Venda, coluna: ColunaOrdenacao): number | string => {
+    switch (coluna) {
+        case 'QT':
+        case 'PUNIT':
+        case 'CAIXA':
+        case 'NUMNOTA':
+            return paraNumero(venda[coluna]);
+        case 'VALOR':
+            return valorVenda(venda);
+        default:
+            return (venda[coluna] ?? '').toString().toLowerCase();
+    }
+};
+
 export default function ProdutosPorDescricao({ filiais }: Props) {
     const [vendas, setVendas] = useState<Venda[]>([]);
+    const [ordenarPor, setOrdenarPor] = useState<ColunaOrdenacao>('VALOR');
+    const [ordemAscendente, setOrdemAscendente] = useState(false);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const [itensPorPagina, setItensPorPagina] = useState(25);
     const [buscando, setBuscando] = useState(false);
@@ -284,6 +324,8 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
             if (response.data.success) {
                 setVendas(response.data.vendas);
                 setPaginaAtual(1);
+                setOrdenarPor('VALOR');
+                setOrdemAscendente(false);
                 if (response.data.vendas.length === 0) {
                     showAlert(
                         'Nenhuma venda encontrada com os filtros informados',
@@ -313,6 +355,8 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
         setValorFiltro('');
         setVendas([]);
         setPaginaAtual(1);
+        setOrdenarPor('VALOR');
+        setOrdemAscendente(false);
         setProdutosSelecionados([]);
         setTermoBusca('');
         setTipoBusca('descricao');
@@ -337,18 +381,65 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
         return `${numericValue.toFixed(3)} KG`;
     };
 
+    // Ordena a lista inteira antes de paginar, senão cada página ordenaria
+    // só os itens que já estavam nela.
+    const vendasOrdenadas = useMemo(() => {
+        const copia = [...vendas];
+        copia.sort((a, b) => {
+            const chaveA = chaveOrdenacao(a, ordenarPor);
+            const chaveB = chaveOrdenacao(b, ordenarPor);
+            const comparacao =
+                typeof chaveA === 'number' && typeof chaveB === 'number'
+                    ? chaveA - chaveB
+                    : String(chaveA).localeCompare(String(chaveB), 'pt-BR');
+            return ordemAscendente ? comparacao : -comparacao;
+        });
+        return copia;
+    }, [vendas, ordenarPor, ordemAscendente]);
+
     // A busca por período pode trazer dezenas de milhares de vendas de uma
     // vez só — paginar client-side evita renderizar a lista inteira na
     // tabela, que travaria a página bem antes disso.
     const vendasPaginadas = useMemo(() => {
         const inicio = (paginaAtual - 1) * itensPorPagina;
-        return vendas.slice(inicio, inicio + itensPorPagina);
-    }, [vendas, paginaAtual, itensPorPagina]);
+        return vendasOrdenadas.slice(inicio, inicio + itensPorPagina);
+    }, [vendasOrdenadas, paginaAtual, itensPorPagina]);
 
     const trocarItensPorPagina = (itens: number) => {
         setItensPorPagina(itens);
         setPaginaAtual(1);
     };
+
+    // Clicar no mesmo título inverte a direção; clicar num título diferente
+    // passa a ordenar por ele, começando crescente.
+    const alternarOrdenacao = (coluna: ColunaOrdenacao) => {
+        if (coluna === ordenarPor) {
+            setOrdemAscendente((atual) => !atual);
+        } else {
+            setOrdenarPor(coluna);
+            setOrdemAscendente(true);
+        }
+        setPaginaAtual(1);
+    };
+
+    const cabecalhoOrdenavel = (coluna: ColunaOrdenacao, label: string) => (
+        <button
+            type="button"
+            onClick={() => alternarOrdenacao(coluna)}
+            className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+        >
+            <span>{label}</span>
+            {ordenarPor === coluna ? (
+                ordemAscendente ? (
+                    <ArrowUp className="size-3.5" />
+                ) : (
+                    <ArrowDown className="size-3.5" />
+                )
+            ) : (
+                <ArrowUpDown className="size-3.5 text-muted-foreground/40" />
+            )}
+        </button>
+    );
 
     return (
         <>
@@ -775,34 +866,64 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="w-[100px]">
-                                                    Cód. Auxiliar
+                                                    {cabecalhoOrdenavel(
+                                                        'CODAUXILIAR',
+                                                        'Cód. Auxiliar',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[100px]">
-                                                    Cód. Produto
+                                                    {cabecalhoOrdenavel(
+                                                        'CODPROD',
+                                                        'Cód. Produto',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="min-w-[250px]">
-                                                    Descrição
+                                                    {cabecalhoOrdenavel(
+                                                        'DESCRICAO',
+                                                        'Descrição',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="text-right">
-                                                    Quantidade
+                                                    {cabecalhoOrdenavel(
+                                                        'QT',
+                                                        'Quantidade',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="text-right">
-                                                    Preço Unit.
+                                                    {cabecalhoOrdenavel(
+                                                        'PUNIT',
+                                                        'Preço Unit.',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="text-right">
-                                                    Total
+                                                    {cabecalhoOrdenavel(
+                                                        'VALOR',
+                                                        'Total',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[100px]">
-                                                    Nota
+                                                    {cabecalhoOrdenavel(
+                                                        'NUMNOTA',
+                                                        'Nota',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[80px] text-center">
-                                                    Caixa
+                                                    {cabecalhoOrdenavel(
+                                                        'CAIXA',
+                                                        'Caixa',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[80px] text-center">
-                                                    Hora
+                                                    {cabecalhoOrdenavel(
+                                                        'HORA',
+                                                        'Hora',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="min-w-[200px]">
-                                                    Operador(a)
+                                                    {cabecalhoOrdenavel(
+                                                        'NOME',
+                                                        'Operador(a)',
+                                                    )}
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
