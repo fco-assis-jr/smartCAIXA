@@ -73,17 +73,13 @@ const desenharEyebrow = (doc: jsPDF, texto: string, x: number, y: number, largur
 };
 
 /**
- * O "carimbo" do tipo de baixa: moldura dupla levemente girada, no espírito
- * dos carimbos de conferência usados no back-office das lojas (CONFERIDO,
- * BAIXADO etc.). É o elemento de identidade deste documento — a informação
- * que mais importa achar rápido ao folhear uma pilha de baixas impressas,
- * marcada como se tivesse sido aplicada à mão sobre o formulário.
+ * O "carimbo" do tipo de baixa: moldura dupla alinhada normalmente, no
+ * espírito dos carimbos de conferência usados no back-office das lojas
+ * (CONFERIDO, BAIXADO etc.). É o elemento de identidade deste documento —
+ * a informação que mais importa achar rápido ao folhear uma pilha de
+ * baixas impressas.
  */
 const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larguraMaxima = 80) => {
-    const anguloGraus = -4;
-    const angulo = (anguloGraus * Math.PI) / 180;
-    const cos = Math.cos(angulo);
-    const sin = Math.sin(angulo);
     const espacamento = 0.4;
 
     // Tipos de baixa mais longos (ex. "Devolução ao Fornecedor") não podem
@@ -107,19 +103,8 @@ const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larg
     const altura = 10;
 
     const retangulo = (inset: number, espessura: number) => {
-        const pontos = [
-            [-largura / 2 + inset, -altura / 2 + inset],
-            [largura / 2 - inset, -altura / 2 + inset],
-            [largura / 2 - inset, altura / 2 - inset],
-            [-largura / 2 + inset, altura / 2 - inset],
-        ].map(([dx, dy]) => [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos]);
-
         doc.setLineWidth(espessura);
-        for (let i = 0; i < 4; i++) {
-            const [x1, y1] = pontos[i];
-            const [x2, y2] = pontos[(i + 1) % 4];
-            doc.line(x1, y1, x2, y2);
-        }
+        doc.rect(cx - largura / 2 + inset, cy - altura / 2 + inset, largura - inset * 2, altura - inset * 2);
     };
 
     doc.setDrawColor(...COR_AMBAR);
@@ -127,7 +112,7 @@ const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larg
     retangulo(1.6, 0.25);
 
     doc.setTextColor(...COR_AMBAR_ESCURO);
-    doc.text(texto, cx, cy, { align: 'center', baseline: 'middle', angle: anguloGraus });
+    doc.text(texto, cx, cy, { align: 'center', baseline: 'middle' });
     doc.setCharSpace(0);
 };
 
