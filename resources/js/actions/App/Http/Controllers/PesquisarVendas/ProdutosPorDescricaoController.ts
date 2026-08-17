@@ -134,7 +134,7 @@ buscarProdutos.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
     buscarProdutos.form = buscarProdutosForm
 /**
 * @see \App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController::buscar
- * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:110
+ * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:115
  * @route '/smartcaixa/pesquisar-vendas/produtos-por-descricao/buscar'
  */
 export const buscar = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -149,7 +149,7 @@ buscar.definition = {
 
 /**
 * @see \App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController::buscar
- * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:110
+ * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:115
  * @route '/smartcaixa/pesquisar-vendas/produtos-por-descricao/buscar'
  */
 buscar.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ buscar.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController::buscar
- * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:110
+ * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:115
  * @route '/smartcaixa/pesquisar-vendas/produtos-por-descricao/buscar'
  */
 buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -168,7 +168,7 @@ buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController::buscar
- * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:110
+ * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:115
  * @route '/smartcaixa/pesquisar-vendas/produtos-por-descricao/buscar'
  */
     const buscarForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -178,7 +178,7 @@ buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController::buscar
- * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:110
+ * @see app/Http/Controllers/PesquisarVendas/ProdutosPorDescricaoController.php:115
  * @route '/smartcaixa/pesquisar-vendas/produtos-por-descricao/buscar'
  */
         buscarForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

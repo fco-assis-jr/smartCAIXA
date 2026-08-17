@@ -5,10 +5,10 @@ use App\Http\Controllers\Api\ProdutoController;
 use App\Http\Controllers\Auth\CustomLoginController;
 use App\Http\Controllers\BaixaProduto\BaixaProdutoController;
 use App\Http\Controllers\Ferramentas\DblinkController;
-use App\Http\Controllers\PesquisarVendas\ProdutosPorGramaturaController;
-use App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController;
-use App\Http\Controllers\PesquisarVendas\BuscarProdutoDevolucaoController;
 use App\Http\Controllers\PesquisarVendas\BuscarItensNotaController;
+use App\Http\Controllers\PesquisarVendas\BuscarProdutoDevolucaoController;
+use App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController;
+use App\Http\Controllers\PesquisarVendas\ProdutosPorGramaturaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -30,6 +30,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect('/smartcaixa/dashboard');
     }
+
     return redirect()->route('login');
 })->name('home');
 
@@ -70,11 +71,11 @@ Route::middleware(['auth'])->prefix('smartcaixa')->group(function () {
 
     // Pesquisar Vendas
     Route::prefix('pesquisar-vendas')->name('pesquisar-vendas.')->group(function () {
-        // Produtos Por Gramatura
-        Route::get('produtos-por-gramatura', [ProdutosPorGramaturaController::class, 'index'])->name('produtos-por-gramatura.index');
+        // Produtos Por Gramatura (mesclada na tela "Vendas por Produto" abaixo — mantém apenas a busca)
+        Route::redirect('produtos-por-gramatura', '/smartcaixa/pesquisar-vendas/produtos-por-descricao');
         Route::post('produtos-por-gramatura/buscar', [ProdutosPorGramaturaController::class, 'buscar'])->name('produtos-por-gramatura.buscar');
 
-        // Produtos Por Descrição
+        // Produtos Por Descrição (tela "Vendas por Produto": busca por descrição, código ou gramatura)
         Route::get('produtos-por-descricao', [ProdutosPorDescricaoController::class, 'index'])->name('produtos-por-descricao.index');
         Route::post('produtos-por-descricao/buscar-produtos', [ProdutosPorDescricaoController::class, 'buscarProdutos'])->name('produtos-por-descricao.buscar-produtos');
         Route::post('produtos-por-descricao/buscar', [ProdutosPorDescricaoController::class, 'buscar'])->name('produtos-por-descricao.buscar');
