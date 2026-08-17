@@ -10,18 +10,20 @@ import {
     Search,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
 import { FilialCombobox } from '@/components/filial-combobox';
 import { type ComboboxOption } from '@/components/generic-combobox';
 import { GramaturaCombobox } from '@/components/gramatura-combobox';
 import Heading from '@/components/heading';
+import { TablePagination } from '@/components/table-pagination';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
     Card,
     CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -101,6 +103,8 @@ const TIPO_BUSCA_LABEL: Record<TipoBusca, string> = {
 
 export default function ProdutosPorDescricao({ filiais }: Props) {
     const [vendas, setVendas] = useState<Venda[]>([]);
+    const [paginaAtual, setPaginaAtual] = useState(1);
+    const [itensPorPagina, setItensPorPagina] = useState(25);
     const [buscando, setBuscando] = useState(false);
     const [filtroExpandido, setFiltroExpandido] = useState(true);
     const [dataInicial, setDataInicial] = useState<Date>(new Date());
@@ -279,6 +283,7 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
 
             if (response.data.success) {
                 setVendas(response.data.vendas);
+                setPaginaAtual(1);
                 if (response.data.vendas.length === 0) {
                     showAlert(
                         'Nenhuma venda encontrada com os filtros informados',
@@ -307,6 +312,7 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
         setCaixaFiltro('');
         setValorFiltro('');
         setVendas([]);
+        setPaginaAtual(1);
         setProdutosSelecionados([]);
         setTermoBusca('');
         setTipoBusca('descricao');
@@ -329,6 +335,19 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
         if (!numericValue || isNaN(numericValue)) return '0.000 KG';
 
         return `${numericValue.toFixed(3)} KG`;
+    };
+
+    // A busca por período pode trazer dezenas de milhares de vendas de uma
+    // vez só — paginar client-side evita renderizar a lista inteira na
+    // tabela, que travaria a página bem antes disso.
+    const vendasPaginadas = useMemo(() => {
+        const inicio = (paginaAtual - 1) * itensPorPagina;
+        return vendas.slice(inicio, inicio + itensPorPagina);
+    }, [vendas, paginaAtual, itensPorPagina]);
+
+    const trocarItensPorPagina = (itens: number) => {
+        setItensPorPagina(itens);
+        setPaginaAtual(1);
     };
 
     return (
@@ -788,7 +807,7 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {vendas.map((venda, index) => (
+                                            {vendasPaginadas.map((venda, index) => (
                                                 <TableRow key={index}>
                                                     <TableCell className="font-mono text-sm font-medium">
                                                         {venda.CODAUXILIAR}
@@ -872,6 +891,18 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
                                     </Table>
                                 </div>
                             </CardContent>
+                            <CardFooter className="p-0">
+                                <TablePagination
+                                    paginaAtual={paginaAtual}
+                                    totalItens={vendas.length}
+                                    itensPorPagina={itensPorPagina}
+                                    onChangePagina={setPaginaAtual}
+                                    onChangeItensPorPagina={
+                                        trocarItensPorPagina
+                                    }
+                                    disabled={buscando}
+                                />
+                            </CardFooter>
                         </Card>
                     )}
 
