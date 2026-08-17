@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import axios from 'axios';
-import { Trash2 } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { PackageMinus, Receipt, ScanBarcode, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
 import { FilialCombobox } from '@/components/filial-combobox';
 import { type ComboboxOption } from '@/components/generic-combobox';
@@ -9,7 +9,13 @@ import Heading from '@/components/heading';
 import { TipoBaixaCombobox } from '@/components/tipo-baixa-combobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { gerarPDFBaixaProduto } from '@/lib/gerar-pdf-baixa';
 import { dashboard } from '@/routes';
@@ -40,11 +46,12 @@ type AlertState = {
 
 export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const [produtos, setProdutos] = useState<Produto[]>([]);
-    const [produtoEncontrado, setProdutoEncontrado] = useState<Produto | null>(null);
+    const [produtoEncontrado, setProdutoEncontrado] = useState<Produto | null>(
+        null,
+    );
     const [buscandoProduto, setBuscandoProduto] = useState(false);
     const [codAuxiliar, setCodAuxiliar] = useState('');
     const [quantidade, setQuantidade] = useState(1);
-    const [filtroExpandido, setFiltroExpandido] = useState(true);
     const [alert, setAlert] = useState<AlertState>({
         open: false,
         message: '',
@@ -67,21 +74,35 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     });
 
     // Função auxiliar para mostrar alertas - memoizada
-    const showAlert = useCallback((message: string, variant: 'default' | 'error' | 'warning' | 'success' = 'default') => {
-        setAlert({ open: true, message, variant });
-    }, []);
+    const showAlert = useCallback(
+        (
+            message: string,
+            variant: 'default' | 'error' | 'warning' | 'success' = 'default',
+        ) => {
+            setAlert({ open: true, message, variant });
+        },
+        [],
+    );
 
     const closeAlert = useCallback(() => {
-        setAlert(prev => ({ ...prev, open: false }));
+        setAlert((prev) => ({ ...prev, open: false }));
     }, []);
 
-    // Recolher filtro automaticamente quando ambos estiverem preenchidos
-    const filtroCompleto = data.codFilial && data.tipoBaixa;
+    const contextoDefinido = Boolean(data.codFilial && data.tipoBaixa);
+
+    // A filial e o tipo de baixa travam assim que o primeiro produto é adicionado —
+    // uma baixa não pode misturar filiais ou tipos diferentes no mesmo relatório.
+    const contextoTravado = produtos.length > 0;
+
+    const filialLabel = filiais.find((f) => f.value === data.codFilial)?.label;
+    const tipoBaixaLabel = tiposBaixa.find(
+        (t) => t.value === data.tipoBaixa,
+    )?.label;
 
     // Calcular total geral - memoizado
     const totalGeral = useMemo(() => {
         return produtos.reduce((sum, produto) => {
-            return sum + (Number(produto.PRECO || 0) * produto.quantidade);
+            return sum + Number(produto.PRECO || 0) * produto.quantidade;
         }, 0);
     }, [produtos]);
 
@@ -98,7 +119,10 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const buscarProduto = async () => {
         if (!codAuxiliar.trim() || !data.codFilial) {
             if (!data.codFilial) {
-                showAlert('Selecione uma filial antes de buscar o produto', 'warning');
+                showAlert(
+                    'Selecione uma filial antes de buscar o produto',
+                    'warning',
+                );
             }
             return;
         }
@@ -110,7 +134,7 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                 {
                     codAuxiliar: codAuxiliar.trim(),
                     codFilial: data.codFilial,
-                }
+                },
             );
 
             if (response.data.produto) {
@@ -123,9 +147,10 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         } catch (error) {
             console.error('Erro ao buscar produto:', error);
             if (axios.isAxiosError(error)) {
-                const errorMessage = error.response?.data?.message ||
-                                   error.response?.data?.error ||
-                                   'Produto não encontrado';
+                const errorMessage =
+                    error.response?.data?.message ||
+                    error.response?.data?.error ||
+                    'Produto não encontrado';
                 showAlert(errorMessage, 'error');
             } else {
                 showAlert('Erro ao buscar produto', 'error');
@@ -149,35 +174,26 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         setCodAuxiliar('');
         setQuantidade(1);
 
-        // Encolher o filtro após adicionar o primeiro produto
-        if (produtos.length === 0) {
-            setFiltroExpandido(false);
-        }
-
-        // Focar no input de código auxiliar para próximo produto
+        // Focar no input de código para o próximo item
         setTimeout(() => {
             codAuxiliarInputRef.current?.focus();
         }, 100);
     };
 
     const removerProduto = (index: number) => {
-        const novaLista = produtos.filter((_, i) => i !== index);
-        setProdutos(novaLista);
-
-        // Reabrir filtro se a lista ficar vazia
-        if (novaLista.length === 0) {
-            setFiltroExpandido(true);
-        }
+        setProdutos(produtos.filter((_, i) => i !== index));
     };
 
     const limparLista = () => {
         setProdutos([]);
-        setFiltroExpandido(true);
     };
 
     const finalizarBaixa = async () => {
         if (produtos.length === 0) {
-            showAlert('Adicione pelo menos um produto antes de finalizar', 'warning');
+            showAlert(
+                'Adicione pelo menos um produto antes de finalizar',
+                'warning',
+            );
             return;
         }
 
@@ -187,13 +203,8 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         }
 
         try {
-            // Buscar nome da filial
-            const filialSelecionada = filiais.find(f => f.value === data.codFilial);
-            const nomeFilial = filialSelecionada?.label || `Filial ${data.codFilial}`;
-
-            // Buscar nome do tipo de baixa
-            const tipoBaixaSelecionada = tiposBaixa.find(t => t.value === data.tipoBaixa);
-            const nomeTipoBaixa = tipoBaixaSelecionada?.label || data.tipoBaixa;
+            const nomeFilial = filialLabel || `Filial ${data.codFilial}`;
+            const nomeTipoBaixa = tipoBaixaLabel || data.tipoBaixa;
 
             // Gerar PDF
             await gerarPDFBaixaProduto({
@@ -213,7 +224,6 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         }
     };
 
-
     return (
         <>
             <Head title="Baixa Produto" />
@@ -221,84 +231,87 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             <div className="px-4 py-6">
                 <Heading
                     title="Baixa Produto"
-                    description="Registre e gerencie as baixas de produtos"
+                    description="Escaneie ou digite o código dos produtos para registrar a baixa"
                 />
 
                 <div className="mt-6 space-y-4">
-                    {/* Filtros - Compacto */}
-                    <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
-                        <button
-                            onClick={() => setFiltroExpandido(!filtroExpandido)}
-                            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-accent/50 transition-colors"
-                        >
-                            <div className="flex-1">
-                                <h2 className="text-sm font-semibold">Filtros</h2>
-                                {filtroCompleto && !filtroExpandido && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                        Filial: {data.codFilial} | Tipo: {tiposBaixa.find(t => t.value === data.tipoBaixa)?.label}
-                                    </p>
-                                )}
+                    {/* Contexto da baixa: filial, tipo e observação */}
+                    {contextoTravado ? (
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 shadow-sm">
+                            <p className="text-sm">
+                                <span className="font-semibold">
+                                    {filialLabel}
+                                </span>
+                                <span className="text-muted-foreground">
+                                    {' '}
+                                    ·{' '}
+                                </span>
+                                <span className="font-semibold">
+                                    {tipoBaixaLabel}
+                                </span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Esvazie a lista abaixo para trocar a filial ou o
+                                tipo de baixa
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border bg-card p-4 shadow-sm">
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <FilialCombobox
+                                    filiais={filiais}
+                                    value={data.codFilial}
+                                    onChange={(value) =>
+                                        setData('codFilial', value)
+                                    }
+                                />
+                                <TipoBaixaCombobox
+                                    tipos={tiposBaixa}
+                                    value={data.tipoBaixa}
+                                    onChange={(value) =>
+                                        setData('tipoBaixa', value)
+                                    }
+                                />
                             </div>
-                            <span className="text-muted-foreground transition-transform duration-300 text-sm" style={{ transform: filtroExpandido ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
-                                ▼
-                            </span>
-                        </button>
 
-                        <div
-                            className={`transition-all duration-300 ease-in-out ${
-                                filtroExpandido
-                                    ? 'max-h-96 opacity-100'
-                                    : 'max-h-0 opacity-0'
-                            }`}
-                        >
-                            <div className="px-4 pb-4 pt-3 border-t">
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <FilialCombobox
-                                        filiais={filiais}
-                                        value={data.codFilial}
-                                        onChange={(value) => setData('codFilial', value)}
-                                        disabled={produtos.length > 0}
-                                    />
-                                    <TipoBaixaCombobox
-                                        tipos={tiposBaixa}
-                                        value={data.tipoBaixa}
-                                        onChange={(value) => setData('tipoBaixa', value)}
-                                        disabled={produtos.length > 0}
-                                    />
-                                </div>
-
-                                <div className="mt-3">
-                                    <Label htmlFor="observacao" className="text-sm">Observação Geral</Label>
-                                    <Input
-                                        id="observacao"
-                                        type="text"
-                                        value={data.observacao}
-                                        onChange={(e) =>
-                                            setData('observacao', e.target.value)
-                                        }
-                                        placeholder="Observação da baixa"
-                                        className="mt-1.5"
-                                    />
-                                </div>
+                            <div className="mt-3">
+                                <Label htmlFor="observacao" className="text-sm">
+                                    Observação Geral
+                                </Label>
+                                <Input
+                                    id="observacao"
+                                    type="text"
+                                    value={data.observacao}
+                                    onChange={(e) =>
+                                        setData('observacao', e.target.value)
+                                    }
+                                    placeholder="Observação da baixa"
+                                    className="mt-1.5"
+                                />
                             </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Adicionar Produto - Interface Otimizada */}
+                    {/* Escanear / adicionar produto */}
                     <div className="rounded-lg border bg-card shadow-sm">
-                        <div className="px-4 py-3 border-b bg-muted/30">
+                        <div className="border-b bg-muted/30 px-4 py-3">
                             <h2 className="text-sm font-semibold">
                                 Adicionar Produto
                             </h2>
                         </div>
-                        <div className="p-4 space-y-3">
-                            {/* Input de Busca */}
-                            <div className="flex gap-3">
-                                <div className="flex-1">
-                                    <Label htmlFor="codAuxiliar" className="text-xs text-muted-foreground">
-                                        Código do Produto
-                                    </Label>
-                                    <Input
+                        <div className="space-y-3 p-4">
+                            <div>
+                                <Label
+                                    htmlFor="codAuxiliar"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    Código do Produto
+                                </Label>
+                                <InputGroup className="mt-1.5">
+                                    <InputGroupAddon>
+                                        <ScanBarcode className="size-4" />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
                                         ref={codAuxiliarInputRef}
                                         id="codAuxiliar"
                                         type="text"
@@ -312,61 +325,67 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                             }
                                         }}
                                         onBlur={buscarProduto}
-                                        placeholder="Digite o código"
-                                        disabled={buscandoProduto || !data.codFilial}
-                                        className="mt-1"
+                                        placeholder={
+                                            contextoDefinido
+                                                ? 'Escaneie ou digite o código...'
+                                                : 'Selecione a filial e o tipo de baixa primeiro'
+                                        }
+                                        disabled={
+                                            buscandoProduto || !contextoDefinido
+                                        }
+                                        className="font-mono"
+                                        autoFocus
                                     />
-                                </div>
+                                </InputGroup>
                             </div>
 
                             {/* Preview do Produto Encontrado */}
                             {produtoEncontrado && (
-                                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-baseline gap-2">
-                                                <h3 className="font-semibold text-sm truncate">
-                                                    {produtoEncontrado.DESCRICAO}
-                                                </h3>
-                                                <span className="text-xs text-muted-foreground shrink-0">
-                                                    Cód: {produtoEncontrado.CODPROD}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground shrink-0">•</span>
-                                                <span className="text-xs text-muted-foreground shrink-0">
-                                                    {produtoEncontrado.EMBALAGEM} / {produtoEncontrado.UNIDADE}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <span className="font-bold text-lg text-primary">
-                                                R$ {Number(produtoEncontrado.PRECO || 0).toFixed(2)}
+                                <div className="flex animate-in flex-col gap-3 rounded-lg border border-info/30 bg-info/10 p-3 duration-300 fade-in slide-in-from-top-2 sm:flex-row sm:items-center">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="truncate text-sm font-semibold">
+                                            {produtoEncontrado.DESCRICAO}
+                                        </h3>
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                            <span className="font-mono">
+                                                Cód: {produtoEncontrado.CODPROD}
+                                            </span>
+                                            <span>•</span>
+                                            <span>
+                                                {produtoEncontrado.EMBALAGEM} /{' '}
+                                                {produtoEncontrado.UNIDADE}
                                             </span>
                                         </div>
-                                        <div className="shrink-0 w-24">
-                                            <Input
-                                                ref={quantidadeInputRef}
-                                                id="quantidade"
-                                                type="number"
-                                                value={quantidade}
-                                                onChange={(e) =>
-                                                    setQuantidade(
-                                                        Number(e.target.value),
-                                                    )
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="shrink-0 font-mono text-lg font-bold text-info tabular-nums">
+                                            R${' '}
+                                            {Number(
+                                                produtoEncontrado.PRECO || 0,
+                                            ).toFixed(2)}
+                                        </span>
+                                        <Input
+                                            ref={quantidadeInputRef}
+                                            id="quantidade"
+                                            type="number"
+                                            value={quantidade}
+                                            onChange={(e) =>
+                                                setQuantidade(
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    adicionarProduto();
                                                 }
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        adicionarProduto();
-                                                    }
-                                                }}
-                                                min="1"
-                                                placeholder="Qtd"
-                                                className="h-9"
-                                            />
-                                        </div>
+                                            }}
+                                            min="1"
+                                            placeholder="Qtd"
+                                            className="h-9 w-20 shrink-0 font-mono"
+                                        />
                                         <Button
                                             onClick={adicionarProduto}
                                             disabled={quantidade <= 0}
-                                            size="default"
                                             className="shrink-0"
                                         >
                                             Adicionar
@@ -376,7 +395,8 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                             )}
 
                             {buscandoProduto && (
-                                <div className="text-center py-4 text-sm text-muted-foreground">
+                                <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+                                    <Spinner />
                                     Buscando produto...
                                 </div>
                             )}
@@ -386,12 +406,18 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                     {/* Lista de Produtos */}
                     {produtos.length > 0 && (
                         <div className="rounded-lg border bg-card shadow-sm">
-                            <div className="px-4 py-3 border-b flex items-center justify-between bg-muted/30">
+                            <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
                                 <h2 className="text-sm font-semibold">
                                     Produtos Adicionados ({produtos.length})
                                 </h2>
                                 <div className="text-sm text-muted-foreground">
-                                    Total: <span className="font-bold text-lg text-foreground">R$ {totalGeral.toFixed(2)}</span>
+                                    Total:{' '}
+                                    <span
+                                        key={produtos.length}
+                                        className="inline-block animate-in font-mono text-lg font-bold text-foreground tabular-nums duration-200 zoom-in-95"
+                                    >
+                                        R$ {totalGeral.toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
@@ -399,19 +425,10 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     <thead className="border-b bg-muted/50">
                                         <tr className="text-xs">
                                             <th className="p-3 text-left font-semibold">
-                                                Cód. Aux
-                                            </th>
-                                            <th className="p-3 text-left font-semibold">
-                                                Cód. Prod
+                                                Código
                                             </th>
                                             <th className="p-3 text-left font-semibold">
                                                 Descrição
-                                            </th>
-                                            <th className="p-3 text-left font-semibold">
-                                                Emb
-                                            </th>
-                                            <th className="p-3 text-left font-semibold">
-                                                Uni
                                             </th>
                                             <th className="p-3 text-right font-semibold">
                                                 Preço
@@ -429,35 +446,37 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     </thead>
                                     <tbody className="divide-y">
                                         {produtos.map((produto, index) => {
-                                            const preco = Number(produto.PRECO || 0);
-                                            const subtotal = preco * produto.quantidade;
+                                            const preco = Number(
+                                                produto.PRECO || 0,
+                                            );
+                                            const subtotal =
+                                                preco * produto.quantidade;
                                             return (
                                                 <tr
                                                     key={index}
-                                                    className="hover:bg-muted/30 transition-colors"
+                                                    className="transition-colors hover:bg-muted/30"
                                                 >
-                                                    <td className="p-3 font-medium">
+                                                    <td className="p-3 font-mono font-medium whitespace-nowrap">
                                                         {produto.CODAUXILIAR}
                                                     </td>
                                                     <td className="p-3">
-                                                        {produto.CODPROD}
+                                                        <div className="max-w-xs truncate font-medium">
+                                                            {produto.DESCRICAO}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {produto.EMBALAGEM}{' '}
+                                                            / {produto.UNIDADE}
+                                                        </div>
                                                     </td>
-                                                    <td className="p-3 max-w-xs">
-                                                        <div className="font-medium truncate">{produto.DESCRICAO}</div>
-                                                    </td>
-                                                    <td className="p-3 text-muted-foreground">
-                                                        {produto.EMBALAGEM}
-                                                    </td>
-                                                    <td className="p-3 text-muted-foreground">
-                                                        {produto.UNIDADE}
-                                                    </td>
-                                                    <td className="p-3 text-right font-medium">
+                                                    <td className="p-3 text-right font-medium tabular-nums">
                                                         R$ {preco.toFixed(2)}
                                                     </td>
                                                     <td className="p-3 text-right">
-                                                        <span className="px-2 py-1 bg-muted rounded text-sm font-medium">{produto.quantidade}</span>
+                                                        <span className="rounded bg-muted px-2 py-1 text-sm font-medium tabular-nums">
+                                                            {produto.quantidade}
+                                                        </span>
                                                     </td>
-                                                    <td className="p-3 text-right font-bold text-primary">
+                                                    <td className="p-3 text-right font-bold text-primary tabular-nums">
                                                         R$ {subtotal.toFixed(2)}
                                                     </td>
                                                     <td className="p-3 text-center">
@@ -481,10 +500,13 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     </tbody>
                                     <tfoot className="border-t-2 bg-muted/30">
                                         <tr>
-                                            <td colSpan={7} className="p-3 text-right font-semibold">
+                                            <td
+                                                colSpan={4}
+                                                className="p-3 text-right font-semibold"
+                                            >
                                                 Total Geral:
                                             </td>
-                                            <td className="p-3 text-right font-bold text-xl text-primary">
+                                            <td className="p-3 text-right text-xl font-bold text-primary tabular-nums">
                                                 R$ {totalGeral.toFixed(2)}
                                             </td>
                                             <td></td>
@@ -492,7 +514,7 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     </tfoot>
                                 </table>
                             </div>
-                            <div className="px-4 py-3 border-t flex justify-end gap-3 bg-muted/20">
+                            <div className="flex justify-end gap-3 border-t bg-muted/20 px-4 py-3">
                                 <Button
                                     variant="outline"
                                     onClick={limparLista}
@@ -500,21 +522,30 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                 >
                                     Limpar Lista
                                 </Button>
-                                <Button size="lg" onClick={finalizarBaixa} className="min-w-40">
+                                <Button
+                                    size="lg"
+                                    onClick={finalizarBaixa}
+                                    className="min-w-40"
+                                >
+                                    <Receipt className="size-4" />
                                     Finalizar Baixa
                                 </Button>
                             </div>
                         </div>
                     )}
 
-                    {/* Estado vazio - Melhorado */}
-                    {produtos.length === 0 && filtroCompleto && (
+                    {/* Estado vazio */}
+                    {produtos.length === 0 && contextoDefinido && (
                         <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center">
-                            <div className="text-sm text-muted-foreground">
-                                ℹ️ Nenhum produto adicionado ainda
+                            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-muted">
+                                <PackageMinus className="size-5 text-muted-foreground" />
                             </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                                Digite o código do produto no campo acima para começar
+                            <div className="text-sm text-muted-foreground">
+                                Nenhum produto adicionado ainda
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                                Escaneie ou digite o código do produto no campo
+                                acima para começar
                             </div>
                         </div>
                     )}
