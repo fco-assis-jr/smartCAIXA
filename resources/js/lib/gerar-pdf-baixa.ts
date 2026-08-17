@@ -24,13 +24,16 @@ type GerarPDFParams = {
 type RGB = [number, number, number];
 
 // Mesma identidade do app (grafite/âmbar), calibrada pra imprimir bem numa
-// laser P&B de loja: nada de preenchimento preto sólido pesando no toner.
+// laser P&B de loja: nada de preenchimento preto sólido pesando no toner, e
+// nenhuma informação depende só da cor pra ser entendida (ver memória do
+// projeto sobre impressão em preto e branco).
 const COR_AMBAR: RGB = [214, 118, 12];
 const COR_AMBAR_ESCURO: RGB = [140, 80, 10];
 const COR_AMBAR_CLARO: RGB = [253, 236, 212];
 const COR_TINTA: RGB = [26, 23, 20];
 const COR_CINZA: RGB = [110, 100, 90];
 const COR_GRADE: RGB = [224, 213, 199];
+const COR_LINHA_ASSINATURA: RGB = [200, 195, 188];
 
 const carregarLogo = async (): Promise<string | null> => {
     try {
@@ -50,6 +53,84 @@ const carregarLogo = async (): Promise<string | null> => {
     }
 };
 
+/**
+ * Rótulo de seção no estilo "ficha de controle": versalete, levemente
+ * espaçado, seguido de um traço fino. É o mesmo tratamento em PRODUTOS,
+ * OBSERVAÇÃO e ASSINATURAS — dá ao documento uma linguagem visual única de
+ * formulário oficial, em vez de blocos de texto soltos.
+ */
+const desenharEyebrow = (doc: jsPDF, texto: string, x: number, y: number, largura: number) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...COR_CINZA);
+    doc.setCharSpace(0.5);
+    doc.text(texto, x, y);
+    doc.setCharSpace(0);
+
+    doc.setDrawColor(...COR_GRADE);
+    doc.setLineWidth(0.25);
+    doc.line(x, y + 2, x + largura, y + 2);
+};
+
+/**
+ * O "carimbo" do tipo de baixa: moldura dupla levemente girada, no espírito
+ * dos carimbos de conferência usados no back-office das lojas (CONFERIDO,
+ * BAIXADO etc.). É o elemento de identidade deste documento — a informação
+ * que mais importa achar rápido ao folhear uma pilha de baixas impressas,
+ * marcada como se tivesse sido aplicada à mão sobre o formulário.
+ */
+const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larguraMaxima = 80) => {
+    const anguloGraus = -4;
+    const angulo = (anguloGraus * Math.PI) / 180;
+    const cos = Math.cos(angulo);
+    const sin = Math.sin(angulo);
+    const espacamento = 0.4;
+
+    // Tipos de baixa mais longos (ex. "Devolução ao Fornecedor") não podem
+    // vazar da moldura — a fonte encolhe até caber num limite de largura,
+    // em vez de manter tamanho fixo e sair do carimbo.
+    doc.setFont('helvetica', 'bold');
+    doc.setCharSpace(espacamento);
+    let fontSize = 11;
+    // getTextWidth() não considera o charSpace aplicado no render, então a
+    // medida leva uma margem de segurança de 15% além do espaçamento extra
+    // somado à mão — sem isso, textos longos ("Devolução ao Fornecedor")
+    // furam a moldura em vez de encolher a tempo.
+    const medir = () => (doc.getTextWidth(texto) + espacamento * Math.max(0, texto.length - 1)) * 1.15 + 16;
+    doc.setFontSize(fontSize);
+    let largura = medir();
+    while (largura > larguraMaxima && fontSize > 6.5) {
+        fontSize -= 0.5;
+        doc.setFontSize(fontSize);
+        largura = medir();
+    }
+    const altura = 10;
+
+    const retangulo = (inset: number, espessura: number) => {
+        const pontos = [
+            [-largura / 2 + inset, -altura / 2 + inset],
+            [largura / 2 - inset, -altura / 2 + inset],
+            [largura / 2 - inset, altura / 2 - inset],
+            [-largura / 2 + inset, altura / 2 - inset],
+        ].map(([dx, dy]) => [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos]);
+
+        doc.setLineWidth(espessura);
+        for (let i = 0; i < 4; i++) {
+            const [x1, y1] = pontos[i];
+            const [x2, y2] = pontos[(i + 1) % 4];
+            doc.line(x1, y1, x2, y2);
+        }
+    };
+
+    doc.setDrawColor(...COR_AMBAR);
+    retangulo(0, 0.6);
+    retangulo(1.6, 0.25);
+
+    doc.setTextColor(...COR_AMBAR_ESCURO);
+    doc.text(texto, cx, cy, { align: 'center', baseline: 'middle', angle: anguloGraus });
+    doc.setCharSpace(0);
+};
+
 export const gerarPDFBaixaProduto = async ({
     nomeFilial,
     tipoBaixa,
@@ -62,6 +143,7 @@ export const gerarPDFBaixaProduto = async ({
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
+    const larguraUtil = pageWidth - margin * 2;
 
     const agora = new Date();
     const dataFormatada = agora.toLocaleDateString('pt-BR');
@@ -103,28 +185,15 @@ export const gerarPDFBaixaProduto = async ({
         });
     }
 
-    // "Chip" do tipo de baixa — é a informação que quem folheia uma pilha de
-    // baixas mais precisa achar rápido, por isso fica em destaque, não só em
-    // texto corrido.
-    const chipY = 30;
-    const chipLabel = tipoBaixa.toUpperCase();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    const chipWidth = doc.getTextWidth(chipLabel) + 8;
-    const chipHeight = 8;
-
-    doc.setDrawColor(...COR_AMBAR);
-    doc.setFillColor(...COR_AMBAR_CLARO);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(margin, chipY, chipWidth, chipHeight, 1.5, 1.5, 'FD');
-    doc.setTextColor(...COR_AMBAR_ESCURO);
-    doc.text(chipLabel, margin + 4, chipY + chipHeight / 2 + 2.8);
+    desenharCarimbo(doc, tipoBaixa.toUpperCase(), textoX + 26, 33);
 
     doc.setDrawColor(...COR_AMBAR);
     doc.setLineWidth(0.6);
     doc.line(margin, 44, pageWidth - margin, 44);
 
     // ---------- Tabela de produtos ----------
+    desenharEyebrow(doc, 'PRODUTOS', margin, 51, larguraUtil);
+
     const produtosData = produtos.map((produto) => {
         const preco = Number(produto.PRECO || 0);
         const subtotal = preco * produto.quantidade;
@@ -140,7 +209,7 @@ export const gerarPDFBaixaProduto = async ({
     });
 
     autoTable(doc, {
-        startY: 50,
+        startY: 56,
         margin: { left: margin, right: margin, bottom: 16 },
         head: [
             [
@@ -177,10 +246,10 @@ export const gerarPDFBaixaProduto = async ({
             0: { cellWidth: 20, font: 'courier' },
             1: { cellWidth: 20, font: 'courier' },
             2: { cellWidth: 58 },
-            3: { cellWidth: 16 },
+            3: { cellWidth: 14 },
             4: { cellWidth: 14, halign: 'right' },
-            5: { cellWidth: 25, halign: 'right' },
-            6: { cellWidth: 25, halign: 'right' },
+            5: { cellWidth: 26, halign: 'right' },
+            6: { cellWidth: 30, halign: 'right' },
         },
     });
 
@@ -213,49 +282,57 @@ export const gerarPDFBaixaProduto = async ({
 
     // ---------- Observação ----------
     if (observacao) {
-        garantirEspaco(20);
-        cursorY += 10;
-        doc.setFont('helvetica', 'bold');
+        garantirEspaco(24);
+        cursorY += 12;
+        desenharEyebrow(doc, 'OBSERVAÇÃO', margin, cursorY, larguraUtil);
+        cursorY += 6;
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(...COR_TINTA);
-        doc.text('Observação:', margin, cursorY);
-        doc.setFont('helvetica', 'normal');
-        const linhas = doc.splitTextToSize(
-            observacao,
-            pageWidth - margin * 2 - 28,
-        );
-        doc.text(linhas, margin + 28, cursorY);
+        const linhas = doc.splitTextToSize(observacao, larguraUtil);
+        doc.text(linhas, margin, cursorY);
         cursorY += linhas.length * 4.5;
     }
 
     // ---------- Assinaturas ----------
+    // A ordem aqui é real, não decorativa: é o caminho físico que o papel
+    // percorre — de quem recebe a mercadoria até a baixa efetivada no caixa
+    // — por isso a numeração 01–05 carrega informação, não é enfeite.
     const assinaturas = [
-        'Recebido por',
-        'Recepcionista',
-        'Gerente',
-        'Financeiro / Patrimônio',
-        'Financeiro / Caixa',
+        { papel: 'Recebido por', detalhe: 'conferência inicial dos itens' },
+        { papel: 'Recepcionista', detalhe: 'registro de entrada da baixa' },
+        { papel: 'Gerente', detalhe: 'aprovação da baixa' },
+        { papel: 'Financeiro / Patrimônio', detalhe: 'lançamento contábil' },
+        { papel: 'Financeiro / Caixa', detalhe: 'baixa efetivada no caixa' },
     ];
-    const espacamento = 15;
+    const espacamento = 16;
 
-    garantirEspaco(assinaturas.length * espacamento + 14);
-    cursorY += 14;
+    garantirEspaco(assinaturas.length * espacamento + 16);
+    cursorY += 12;
+    desenharEyebrow(doc, 'ASSINATURAS', margin, cursorY, larguraUtil);
+    cursorY += 10;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...COR_CINZA);
-    doc.text('ASSINATURAS', margin, cursorY);
-    cursorY += 7;
+    assinaturas.forEach((item, indice) => {
+        const numero = String(indice + 1).padStart(2, '0');
 
-    assinaturas.forEach((label) => {
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('courier', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...COR_AMBAR_ESCURO);
+        doc.text(numero, margin, cursorY);
+
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...COR_TINTA);
-        doc.text(label, margin, cursorY - 1);
+        doc.text(item.papel, margin + 10, cursorY);
 
-        doc.setDrawColor(200, 195, 188);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...COR_CINZA);
+        doc.text(item.detalhe, margin + 10, cursorY + 4.5);
+
+        doc.setDrawColor(...COR_LINHA_ASSINATURA);
         doc.setLineWidth(0.3);
-        doc.line(margin + 42, cursorY, pageWidth - margin, cursorY);
+        doc.line(margin + 60, cursorY + 6, pageWidth - margin, cursorY + 6);
 
         cursorY += espacamento;
     });
@@ -265,6 +342,9 @@ export const gerarPDFBaixaProduto = async ({
     const totalPaginas = doc.getNumberOfPages();
     for (let pagina = 1; pagina <= totalPaginas; pagina++) {
         doc.setPage(pagina);
+        doc.setDrawColor(...COR_GRADE);
+        doc.setLineWidth(0.2);
+        doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         doc.setTextColor(...COR_CINZA);
