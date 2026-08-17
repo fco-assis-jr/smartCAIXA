@@ -166,12 +166,31 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const adicionarProduto = () => {
         if (!produtoEncontrado || quantidade <= 0) return;
 
-        const novoProduto = {
-            ...produtoEncontrado,
-            quantidade: quantidade,
-        };
+        // Escanear o mesmo produto de novo soma na linha existente, em vez
+        // de duplicar — é assim que o operador espera ver a coleta agrupada
+        // quando passa o mesmo código várias vezes.
+        const jaExiste = produtos.some(
+            (produto) => produto.CODAUXILIAR === produtoEncontrado.CODAUXILIAR,
+        );
 
-        setProdutos([...produtos, novoProduto]);
+        if (jaExiste) {
+            setProdutos((atual) =>
+                atual.map((produto) =>
+                    produto.CODAUXILIAR === produtoEncontrado.CODAUXILIAR
+                        ? {
+                              ...produto,
+                              quantidade: produto.quantidade + quantidade,
+                          }
+                        : produto,
+                ),
+            );
+        } else {
+            setProdutos((atual) => [
+                ...atual,
+                { ...produtoEncontrado, quantidade },
+            ]);
+        }
+
         setProdutoEncontrado(null);
         setCodAuxiliar('');
         setQuantidade(1);
@@ -416,7 +435,7 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                 <div className="text-sm text-muted-foreground">
                                     Total:{' '}
                                     <span
-                                        key={produtos.length}
+                                        key={totalGeral}
                                         className="inline-block animate-in font-mono text-lg font-bold text-foreground tabular-nums duration-200 zoom-in-95"
                                     >
                                         R$ {totalGeral.toFixed(2)}
