@@ -1,7 +1,18 @@
-import { GenericCombobox, type ComboboxOption } from '@/components/generic-combobox';
+import { useMemo } from 'react';
+import {
+    GenericCombobox,
+    type ComboboxOption,
+} from '@/components/generic-combobox';
+
+export type CaixaInfo = {
+    codFilial: string;
+    numeroCaixa: number;
+    descricao: string;
+};
 
 type CaixaComboboxProps = {
-    caixas: ComboboxOption[];
+    caixas: CaixaInfo[];
+    codFilial: string;
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -9,20 +20,34 @@ type CaixaComboboxProps = {
 
 export function CaixaCombobox({
     caixas,
+    codFilial,
     value,
     onChange,
     disabled = false,
 }: CaixaComboboxProps) {
+    const options = useMemo<ComboboxOption[]>(() => {
+        return caixas
+            .filter((caixa) => caixa.codFilial === codFilial)
+            .map((caixa) => ({
+                value: String(caixa.numeroCaixa),
+                label: caixa.descricao || `Caixa ${caixa.numeroCaixa}`,
+            }));
+    }, [caixas, codFilial]);
+
     return (
         <GenericCombobox
             id="caixa-combobox"
             label="Número do Caixa"
-            options={caixas}
+            options={options}
             value={value}
             onChange={onChange}
-            placeholder="Selecione o número do caixa..."
-            emptyMessage="Nenhum caixa encontrado."
-            disabled={disabled}
+            placeholder={
+                codFilial
+                    ? 'Selecione o caixa...'
+                    : 'Selecione a filial primeiro'
+            }
+            emptyMessage="Nenhum caixa ativo encontrado nessa filial."
+            disabled={disabled || !codFilial}
         />
     );
 }
