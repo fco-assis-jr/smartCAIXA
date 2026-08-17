@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::index
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:16
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:23
  * @route '/smartcaixa/ferramentas/dblink'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::recriar
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:43
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:41
  * @route '/smartcaixa/ferramentas/dblink/recriar'
  */
 export const recriar = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ recriar.definition = {
 
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::recriar
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:43
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:41
  * @route '/smartcaixa/ferramentas/dblink/recriar'
  */
 recriar.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ recriar.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::recriar
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:43
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:41
  * @route '/smartcaixa/ferramentas/dblink/recriar'
  */
 recriar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ recriar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::recriar
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:43
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:41
  * @route '/smartcaixa/ferramentas/dblink/recriar'
  */
     const recriarForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ recriar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::recriar
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:43
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:41
  * @route '/smartcaixa/ferramentas/dblink/recriar'
  */
         recriarForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -134,7 +134,7 @@ recriar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     recriar.form = recriarForm
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
 export const status = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -149,7 +149,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
 status.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ status.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
 status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -167,7 +167,7 @@ status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
 status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -177,7 +177,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
     const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -187,7 +187,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
         statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -196,7 +196,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Ferramentas\DblinkController::status
- * @see app/Http/Controllers/Ferramentas/DblinkController.php:206
+ * @see app/Http/Controllers/Ferramentas/DblinkController.php:189
  * @route '/smartcaixa/ferramentas/dblink/status'
  */
         statusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

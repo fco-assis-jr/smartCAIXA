@@ -5,11 +5,18 @@ namespace App\Http\Controllers\Ferramentas;
 use App\Http\Controllers\Api\FilialController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DblinkController extends Controller
 {
+    /**
+     * Nome da conexão Oracle dinâmica usada para falar diretamente com o caixa
+     * selecionado (montada em tempo de execução a partir de PCCAIXASFATURAMENTOAUTOSERV).
+     */
+    private const CONEXAO_CAIXA = 'oracle_caixa';
+
     /**
      * Display the dblink management page
      */
@@ -22,108 +29,85 @@ class DblinkController extends Controller
 
         $filiais = $filiaisData['success'] ? $filiaisData['data'] : [];
 
-        // Lista de caixas (1 a 30)
-        $caixas = [];
-        for ($i = 1; $i <= 30; $i++) {
-            $caixas[] = [
-                'value' => (string) $i,
-                'label' => "Caixa {$i}",
-            ];
-        }
-
         return Inertia::render('Ferramentas/Dblink/Index', [
             'filiais' => $filiais,
-            'caixas' => $caixas,
+            'caixas' => $this->listarCaixas(),
         ]);
     }
 
     /**
-     * Recriar o database link
+     * Recriar o database link diretamente na Oracle do caixa selecionado
      */
     public function recriar(Request $request)
     {
         $validated = $request->validate([
             'codFilial' => 'required|string',
-            'numeroCaixa' => 'required|integer|min:1|max:30',
+            'numeroCaixa' => 'required|integer|min:1',
         ]);
 
-        try {
-            // Montar o IP do caixa
-            $ip = "172.22.{$validated['codFilial']}.{$validated['numeroCaixa']}";
+        $caixa = $this->buscarCaixa($validated['codFilial'], (int) $validated['numeroCaixa']);
 
-            \Log::info('Recriando DBLink', [
-                'codFilial' => $validated['codFilial'],
-                'numeroCaixa' => $validated['numeroCaixa'],
+        if (! $caixa || ! $caixa['endereco']) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Caixa não encontrado',
+                'message' => "Não encontramos um caixa ativo com esse número na filial {$validated['codFilial']}.",
+            ], 404);
+        }
+
+        $ip = $caixa['endereco'];
+
+        \Log::info('Recriando DBLink', [
+            'codFilial' => $validated['codFilial'],
+            'numeroCaixa' => $validated['numeroCaixa'],
+            'descricao' => $caixa['descricao'],
+            'ip' => $ip,
+        ]);
+
+        // Passo 1: Verificar rapidamente se o caixa está online na rede
+        $socket = @fsockopen($ip, 1521, $errno, $errstr, 3);
+
+        if (! $socket) {
+            \Log::warning('Caixa offline', ['ip' => $ip, 'error' => $errstr]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Caixa Offline',
+                'message' => "Não foi possível conectar ao caixa {$caixa['descricao']}.\n\nVerifique se ele está ligado e conectado à rede, e tente novamente.",
+            ], 400);
+        }
+
+        fclose($socket);
+
+        // Passo 2: Autenticar na Oracle do próprio caixa, com as credenciais cadastradas
+        $conexao = $this->conectarCaixa($caixa);
+
+        try {
+            DB::connection($conexao)->select('SELECT 1 FROM DUAL');
+        } catch (\Exception $e) {
+            \Log::warning('Caixa online na rede, mas a Oracle dele não respondeu', [
                 'ip' => $ip,
+                'error' => $e->getMessage(),
             ]);
 
-            // Passo 1: Verificar se o caixa está online
-            \Log::info('Testando conectividade com o caixa', ['ip' => $ip]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Oracle indisponível',
+                'message' => "O caixa {$caixa['descricao']} está online, mas não foi possível se conectar a ele.\n\nAguarde um instante e tente novamente, ou peça apoio da equipe de TI.",
+            ], 502);
+        }
 
-            $caixaOnline = false;
-            $errorMessage = '';
+        // Passo 3: Dropar o DBLink existente na Oracle do caixa (se existir)
+        try {
+            DB::connection($conexao)->statement('DROP DATABASE LINK DBLSERVIDOR');
+            \Log::info('DBLink DBLSERVIDOR dropado com sucesso', ['ip' => $ip]);
+        } catch (\Exception $e) {
+            // Se não existir, não tem problema
+            \Log::info('DBLink DBLSERVIDOR não existia', ['ip' => $ip, 'error' => $e->getMessage()]);
+        }
 
-            try {
-                // Tentar conectar diretamente no caixa para verificar se está online
-                $testConnection = "(DESCRIPTION =
-                    (ADDRESS = (PROTOCOL = TCP)(HOST = {$ip})(PORT = 1521))
-                    (CONNECT_DATA =
-                        (SERVER = DEDICATED)
-                        (SERVICE_NAME = xe)
-                    )
-                )";
-
-                // Criar uma conexão temporária para testar
-                $config = [
-                    'driver' => 'oracle',
-                    'tns' => $testConnection,
-                    'username' => 'caixa',
-                    'password' => 'caixa',
-                    'charset' => 'AL32UTF8',
-                    'prefix' => '',
-                ];
-
-                $testDb = DB::connection()->getPdo();
-                $stmt = $testDb->prepare("SELECT 1 FROM DUAL");
-                $stmt->execute();
-
-                // Tentar com fsockopen para verificar se a porta está aberta
-                $socket = @fsockopen($ip, 1521, $errno, $errstr, 2);
-                if ($socket) {
-                    fclose($socket);
-                    $caixaOnline = true;
-                    \Log::info('Caixa está online', ['ip' => $ip]);
-                } else {
-                    $errorMessage = "Caixa offline ou porta 1521 inacessível: {$errstr} ({$errno})";
-                    \Log::warning('Caixa offline', ['ip' => $ip, 'error' => $errorMessage]);
-                }
-            } catch (\Exception $e) {
-                $errorMessage = $e->getMessage();
-                \Log::warning('Erro ao testar conexão com o caixa', [
-                    'ip' => $ip,
-                    'error' => $errorMessage,
-                ]);
-            }
-
-            // Se o caixa não está online, retornar erro
-            if (!$caixaOnline) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Caixa Offline',
-                    'message' => "Não foi possível conectar ao caixa.\n\nFilial: {$validated['codFilial']}\nCaixa: {$validated['numeroCaixa']}\nIP: {$ip}\n\nVerifique se:\n• O caixa está ligado\n• A rede está funcionando\n• O Oracle está rodando no caixa\n\nDetalhes: {$errorMessage}",
-                ], 400);
-            }
-
-            // Passo 2: Dropar o DBLink existente (se existir)
-            try {
-                DB::connection('oracle')->statement('DROP DATABASE LINK DBLSERVIDOR');
-                \Log::info('DBLink DBLSERVIDOR dropado com sucesso');
-            } catch (\Exception $e) {
-                // Se não existir, não tem problema
-                \Log::info('DBLink DBLSERVIDOR não existia', ['error' => $e->getMessage()]);
-            }
-
-            // Passo 3: Criar o novo DBLink apontando para os servidores centrais
+        // Passo 4: Criar o novo DBLink na Oracle do caixa, apontando para os servidores centrais
+        try {
             $createStatement = "
                 CREATE DATABASE LINK DBLSERVIDOR
                 CONNECT TO BARATAO
@@ -145,93 +129,101 @@ class DblinkController extends Controller
                 )'
             ";
 
-            DB::connection('oracle')->statement($createStatement);
+            DB::connection($conexao)->statement($createStatement);
 
             \Log::info('DBLink DBLSERVIDOR criado com sucesso', [
                 'servidores' => ['172.22.0.176', '172.22.0.177'],
-                'load_balance' => 'yes',
                 'caixa' => $ip,
             ]);
-
-            // Passo 4: Testar o DBLink com os servidores centrais
-            try {
-                DB::connection('oracle')->select('SELECT 1 FROM DUAL@DBLSERVIDOR');
-                \Log::info('Teste de conexão com DBLink bem-sucedido');
-
-                return response()->json([
-                    'success' => true,
-                    'message' => "DBLink recriado com sucesso!",
-                    'data' => [
-                        'ipCaixa' => $ip,
-                        'caixaOnline' => true,
-                        'servidores' => ['172.22.0.176', '172.22.0.177'],
-                        'codFilial' => $validated['codFilial'],
-                        'numeroCaixa' => $validated['numeroCaixa'],
-                    ],
-                ]);
-            } catch (\Exception $e) {
-                \Log::warning('DBLink criado mas teste de conexão com servidores centrais falhou', [
-                    'error' => $e->getMessage(),
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'warning' => true,
-                    'message' => "DBLink criado e caixa está online.\n\nMas não foi possível testar a conexão com os servidores centrais.\n\nVerifique se os servidores estão acessíveis:\n• 172.22.0.176:1521\n• 172.22.0.177:1521\n\nCaixa: {$ip}",
-                    'data' => [
-                        'ipCaixa' => $ip,
-                        'servidores' => ['172.22.0.176', '172.22.0.177'],
-                        'codFilial' => $validated['codFilial'],
-                        'numeroCaixa' => $validated['numeroCaixa'],
-                    ],
-                ]);
-            }
         } catch (\Exception $e) {
-            \Log::error('Erro ao recriar DBLink', [
+            \Log::error('Erro ao criar DBLink na Oracle do caixa', [
+                'ip' => $ip,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => 'Erro ao recriar DBLink',
-                'message' => $e->getMessage(),
+                'error' => 'Erro ao criar DBLink',
+                'message' => "Não foi possível recriar a conexão do caixa {$caixa['descricao']}.\n\nTente novamente ou peça apoio da equipe de TI.",
             ], 500);
+        } finally {
+            DB::disconnect($conexao);
+        }
+
+        // Passo 5: Testar o DBLink recém-criado contra os servidores centrais
+        try {
+            DB::connection($conexao)->select('SELECT 1 FROM DUAL@DBLSERVIDOR');
+
+            return response()->json([
+                'success' => true,
+                'message' => "Conexão do caixa {$caixa['descricao']} recriada com sucesso!",
+                'data' => [
+                    'descricaoCaixa' => $caixa['descricao'],
+                    'codFilial' => $validated['codFilial'],
+                    'numeroCaixa' => $validated['numeroCaixa'],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('DBLink criado, mas teste de conexão com os servidores centrais falhou', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'warning' => true,
+                'message' => "A conexão do caixa {$caixa['descricao']} foi recriada, mas ainda não foi possível confirmar a comunicação com o servidor central.\n\nAguarde um instante e verifique o status novamente.",
+                'data' => [
+                    'descricaoCaixa' => $caixa['descricao'],
+                    'codFilial' => $validated['codFilial'],
+                    'numeroCaixa' => $validated['numeroCaixa'],
+                ],
+            ]);
+        } finally {
+            DB::disconnect($conexao);
         }
     }
 
     /**
-     * Verificar status do DBLink atual
+     * Verificar o status do DBLink do caixa selecionado, conectando na Oracle dele
      */
-    public function status()
+    public function status(Request $request)
     {
+        $validated = $request->validate([
+            'codFilial' => 'required|string',
+            'numeroCaixa' => 'required|integer|min:1',
+        ]);
+
+        $caixa = $this->buscarCaixa($validated['codFilial'], (int) $validated['numeroCaixa']);
+
+        if (! $caixa || ! $caixa['endereco']) {
+            return response()->json([
+                'success' => true,
+                'exists' => false,
+                'message' => 'Caixa não encontrado.',
+            ]);
+        }
+
+        $conexao = $this->conectarCaixa($caixa);
+
         try {
-            // Buscar informações do DBLink atual
-            $dblink = DB::connection('oracle')
-                ->select("
-                    SELECT
-                        DB_LINK,
-                        USERNAME,
-                        HOST,
-                        CREATED
-                    FROM USER_DB_LINKS
-                    WHERE DB_LINK = 'DBLSERVIDOR'
-                ");
+            $dblink = DB::connection($conexao)->select("
+                SELECT DB_LINK
+                FROM USER_DB_LINKS
+                WHERE DB_LINK = 'DBLSERVIDOR'
+            ");
 
             if (empty($dblink)) {
                 return response()->json([
                     'success' => true,
                     'exists' => false,
-                    'message' => 'DBLink DBLSERVIDOR não existe',
+                    'message' => 'Este caixa ainda não foi conectado ao servidor central.',
                 ]);
             }
 
-            $info = $dblink[0];
-
-            // Tentar testar a conexão
+            // Tentar testar a conexão com os servidores centrais
             $connectionOk = false;
             try {
-                DB::connection('oracle')->select('SELECT 1 FROM DUAL@DBLSERVIDOR');
+                DB::connection($conexao)->select('SELECT 1 FROM DUAL@DBLSERVIDOR');
                 $connectionOk = true;
             } catch (\Exception $e) {
                 \Log::info('Teste de conexão DBLink falhou', ['error' => $e->getMessage()]);
@@ -241,23 +233,120 @@ class DblinkController extends Controller
                 'success' => true,
                 'exists' => true,
                 'connectionOk' => $connectionOk,
-                'data' => [
-                    'db_link' => $info->db_link ?? '',
-                    'username' => $info->username ?? '',
-                    'host' => $info->host ?? '',
-                    'created' => $info->created ?? '',
-                ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Erro ao verificar status do DBLink', [
+            \Log::info('Não foi possível conectar à Oracle do caixa para verificar o status', [
+                'ip' => $caixa['endereco'],
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'success' => false,
-                'error' => 'Erro ao verificar status',
-                'message' => $e->getMessage(),
-            ], 500);
+                'success' => true,
+                'exists' => false,
+                'unreachable' => true,
+                'message' => "Não foi possível verificar o caixa {$caixa['descricao']} agora.",
+            ]);
+        } finally {
+            DB::disconnect($conexao);
         }
+    }
+
+    /**
+     * Listar os caixas ativos de todas as filiais, para o combobox de seleção.
+     * Não inclui endereço/usuário/senha — esses só são lidos server-side, em
+     * buscarCaixa(), no momento em que de fato precisamos conectar num caixa.
+     */
+    private function listarCaixas(): array
+    {
+        try {
+            // Cacheado por 10 minutos — são ~270 caixas de todas as filiais,
+            // e essa lista dificilmente muda de um minuto pro outro. Sem o
+            // cache, essa consulta roda de novo cada vez que a tela do
+            // DBLink é aberta.
+            return Cache::remember('dblink.caixas', now()->addMinutes(10), function () {
+                $rows = DB::connection('oracle')->select("
+                    SELECT c.codfilial, i.numcaixa, c.descricao
+                    FROM pccaixasfaturamentoautoserv i
+                    JOIN pccaixa c ON i.numcaixa = c.numcaixa
+                    WHERE proxnummovimentopdv IS NOT NULL
+                      AND i.ativo = 'S'
+                    ORDER BY TO_NUMBER(c.codfilial), i.numcaixa
+                ");
+
+                return array_map(function ($row) {
+                    $row = (array) $row;
+                    $descricao = $row['descricao'] ?? $row['DESCRICAO'] ?? '';
+
+                    return [
+                        'codFilial' => (string) ($row['codfilial'] ?? $row['CODFILIAL'] ?? ''),
+                        'numeroCaixa' => (int) ($row['numcaixa'] ?? $row['NUMCAIXA'] ?? 0),
+                        'descricao' => trim(is_string($descricao) ? iconv('Windows-1252', 'UTF-8//IGNORE', $descricao) : $descricao),
+                    ];
+                }, $rows);
+            });
+        } catch (\Exception $e) {
+            \Log::error('Erro ao listar caixas', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Buscar o endereço/usuário/senha reais de um caixa específico.
+     * Só roda server-side — endereco/usuario/senha nunca são enviados ao frontend.
+     */
+    private function buscarCaixa(string $codFilial, int $numeroCaixa): ?array
+    {
+        $caixa = DB::connection('oracle')->selectOne('
+            SELECT c.codfilial, i.numcaixa, c.descricao, i.endereco, i.usuario, i.senha
+            FROM pccaixasfaturamentoautoserv i
+            JOIN pccaixa c ON i.numcaixa = c.numcaixa
+            WHERE c.codfilial = :codFilial
+                AND i.numcaixa = :numeroCaixa
+                AND proxnummovimentopdv IS NOT NULL
+                AND i.ativo = \'S\'
+        ', [
+            'codFilial' => $codFilial,
+            'numeroCaixa' => $numeroCaixa,
+        ]);
+
+        if (! $caixa) {
+            return null;
+        }
+
+        $row = (array) $caixa;
+        $descricao = $row['descricao'] ?? $row['DESCRICAO'] ?? '';
+
+        return [
+            'descricao' => trim(is_string($descricao) ? iconv('Windows-1252', 'UTF-8//IGNORE', $descricao) : $descricao),
+            'endereco' => trim((string) ($row['endereco'] ?? $row['ENDERECO'] ?? '')),
+            'usuario' => trim((string) ($row['usuario'] ?? $row['USUARIO'] ?? '')),
+            'senha' => (string) ($row['senha'] ?? $row['SENHA'] ?? ''),
+        ];
+    }
+
+    /**
+     * Registrar (ou atualizar) a conexão Oracle dinâmica que fala diretamente
+     * com a Oracle do caixa informado, usando o endereço/usuário/senha
+     * cadastrados em PCCAIXASFATURAMENTOAUTOSERV.
+     */
+    private function conectarCaixa(array $caixa): string
+    {
+        config(['database.connections.'.self::CONEXAO_CAIXA => [
+            'driver' => 'oracle',
+            'host' => $caixa['endereco'],
+            'port' => '1521',
+            'database' => 'XE',
+            'service_name' => 'XE',
+            'username' => $caixa['usuario'],
+            'password' => $caixa['senha'],
+            'charset' => 'AL32UTF8',
+            'prefix' => '',
+        ]]);
+
+        // Garante que não reaproveitamos uma conexão PDO já aberta para outro caixa.
+        DB::purge(self::CONEXAO_CAIXA);
+
+        return self::CONEXAO_CAIXA;
     }
 }

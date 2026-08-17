@@ -1,6 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, PackageMinus, Search, Wrench } from 'lucide-react';
-import { NavFooter } from '@/components/nav-footer';
+import { LayoutGrid, PackageMinus, Search, Wrench } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -19,7 +18,8 @@ import pesquisarVendas from '@/routes/pesquisar-vendas';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
-
+// "Vendas por Gramatura" foi mesclada em "Vendas por Produto" (mesma tela,
+// filtro "Buscar por: Peso (gramatura)") — ver PesquisarVendas/ProdutosPorDescricao/Index.tsx.
 
 const mainNavItems: NavItem[] = [
     {
@@ -36,10 +36,6 @@ const mainNavItems: NavItem[] = [
         title: 'Consultar Vendas',
         icon: Search,
         items: [
-            {
-                title: 'Vendas por Gramatura',
-                href: pesquisarVendas.produtosPorGramatura.index(),
-            },
             {
                 title: 'Vendas por Produto',
                 href: pesquisarVendas.produtosPorDescricao.index(),
@@ -66,19 +62,6 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
 export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -99,7 +82,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

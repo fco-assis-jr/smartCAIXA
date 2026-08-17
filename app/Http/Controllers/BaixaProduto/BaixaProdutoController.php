@@ -18,7 +18,7 @@ class BaixaProdutoController extends Controller
     public function index()
     {
         // Buscar filiais usando o FilialController
-        $filialController = new FilialController();
+        $filialController = new FilialController;
         $filiaisResponse = $filialController->index();
         $filiaisData = json_decode($filiaisResponse->getContent(), true);
 
@@ -68,12 +68,12 @@ class BaixaProdutoController extends Controller
             ->comEstoque();
 
         // Filtrar por filial
-        if (!empty($validated['codFilial'])) {
+        if (! empty($validated['codFilial'])) {
             $query->porFilial($validated['codFilial']);
         }
 
         // Filtrar por código auxiliar
-        if (!empty($validated['codAuxiliar'])) {
+        if (! empty($validated['codAuxiliar'])) {
             $query->porCodigoAuxiliar($validated['codAuxiliar']);
         }
 
@@ -120,14 +120,13 @@ class BaixaProdutoController extends Controller
 
             $produto = $query->first();
 
-            if (!$produto) {
+            if (! $produto) {
 
                 return response()->json([
                     'error' => 'Produto não encontrado',
                     'message' => "Não foi possível encontrar o produto com código {$validated['codAuxiliar']} na filial {$validated['codFilial']}",
                 ], 404);
             }
-
 
             return response()->json([
                 'produto' => [
@@ -142,11 +141,11 @@ class BaixaProdutoController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Erro ao buscar produto: ' . $e->getMessage());
+            \Log::error('Erro ao buscar produto: '.$e->getMessage());
 
             return response()->json([
                 'error' => 'Erro ao buscar produto',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar o produto. Tente novamente.',
             ], 500);
         }
     }

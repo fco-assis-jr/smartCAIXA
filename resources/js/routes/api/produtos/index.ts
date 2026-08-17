@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::buscarCodigo
- * @see app/Http/Controllers/Api/ProdutoController.php:17
+ * @see app/Http/Controllers/Api/ProdutoController.php:16
  * @route '/smartcaixa/api/produtos/buscar-codigo'
  */
 export const buscarCodigo = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ buscarCodigo.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::buscarCodigo
- * @see app/Http/Controllers/Api/ProdutoController.php:17
+ * @see app/Http/Controllers/Api/ProdutoController.php:16
  * @route '/smartcaixa/api/produtos/buscar-codigo'
  */
 buscarCodigo.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ buscarCodigo.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::buscarCodigo
- * @see app/Http/Controllers/Api/ProdutoController.php:17
+ * @see app/Http/Controllers/Api/ProdutoController.php:16
  * @route '/smartcaixa/api/produtos/buscar-codigo'
  */
 buscarCodigo.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ buscarCodigo.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\Api\ProdutoController::buscarCodigo
- * @see app/Http/Controllers/Api/ProdutoController.php:17
+ * @see app/Http/Controllers/Api/ProdutoController.php:16
  * @route '/smartcaixa/api/produtos/buscar-codigo'
  */
     const buscarCodigoForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ buscarCodigo.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\Api\ProdutoController::buscarCodigo
- * @see app/Http/Controllers/Api/ProdutoController.php:17
+ * @see app/Http/Controllers/Api/ProdutoController.php:16
  * @route '/smartcaixa/api/produtos/buscar-codigo'
  */
         buscarCodigoForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -56,7 +56,7 @@ buscarCodigo.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     buscarCodigo.form = buscarCodigoForm
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
 export const search = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -71,7 +71,7 @@ search.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
 search.url = (options?: RouteQueryOptions) => {
@@ -80,7 +80,7 @@ search.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
 search.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -89,7 +89,7 @@ search.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
 search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -99,7 +99,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
     const searchForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -109,7 +109,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
         searchForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -118,7 +118,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Api\ProdutoController::search
- * @see app/Http/Controllers/Api/ProdutoController.php:88
+ * @see app/Http/Controllers/Api/ProdutoController.php:86
  * @route '/smartcaixa/api/produtos/search'
  */
         searchForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -134,7 +134,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     search.form = searchForm
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
 export const show = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -149,7 +149,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
 show.url = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -177,7 +177,7 @@ show.url = (args: { codProd: string | number } | [codProd: string | number ] | s
 
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
 show.get = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -186,7 +186,7 @@ show.get = (args: { codProd: string | number } | [codProd: string | number ] | s
 })
 /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
 show.head = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -196,7 +196,7 @@ show.head = (args: { codProd: string | number } | [codProd: string | number ] | 
 
     /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
     const showForm = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -206,7 +206,7 @@ show.head = (args: { codProd: string | number } | [codProd: string | number ] | 
 
             /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
         showForm.get = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -215,7 +215,7 @@ show.head = (args: { codProd: string | number } | [codProd: string | number ] | 
         })
             /**
 * @see \App\Http\Controllers\Api\ProdutoController::show
- * @see app/Http/Controllers/Api/ProdutoController.php:183
+ * @see app/Http/Controllers/Api/ProdutoController.php:180
  * @route '/smartcaixa/api/produtos/{codProd}'
  */
         showForm.head = (args: { codProd: string | number } | [codProd: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

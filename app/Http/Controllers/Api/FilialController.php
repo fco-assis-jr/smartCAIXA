@@ -4,37 +4,45 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class FilialController extends Controller
 {
     /**
-     * Listar todas as filiais ativas
+     * Listar todas as filiais ativas.
+     *
+     * A lista de filiais quase nunca muda, mas essa consulta roda de novo a
+     * cada navegação (Baixa Produto, DBLink, Vendas por Produto todas
+     * chamam isso na hora de montar a página). Cacheamos por 10 minutos
+     * pra não esperar o Oracle de novo em cada troca de tela.
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
         try {
-            $filiais = DB::connection('oracle')
-                ->table('PCFILIAL')
-                ->select('CODIGO', 'CONTATO', 'CGC')
-                ->whereNotIn('CODIGO', ['1', '2', '50', '51', '52', '53', '99'])
-                ->orderByRaw('TO_NUMBER(CODIGO)')
-                ->get()
-                ->map(function ($filial) {
-                    return [
-                        'value' => (string) ($filial->codigo ?? ''),
-                        'label' => ($filial->codigo ?? '') . ' - ' . trim($filial->contato ?? ''),
-                        'cnpj' => $filial->cgc ?? '',
-                        'codigo' => $filial->codigo ?? '',
-                        'nome' => trim($filial->contato ?? ''),
-                    ];
-                })
-                ->filter(function ($filial) {
-                    return !empty($filial['value']);
-                })
-                ->values();
+            $filiais = Cache::remember('filiais.index', now()->addMinutes(10), function () {
+                // Só CODIGO e CONTATO — é só o que o combobox de filiais usa no
+                // front (value/label). Evita mandar CNPJ e outros dados da filial
+                // sem necessidade em toda página que lista filiais.
+                return DB::connection('oracle')
+                    ->table('PCFILIAL')
+                    ->select('CODIGO', 'CONTATO')
+                    ->whereNotIn('CODIGO', ['1', '2', '50', '51', '52', '53', '99'])
+                    ->orderByRaw('TO_NUMBER(CODIGO)')
+                    ->get()
+                    ->map(function ($filial) {
+                        return [
+                            'value' => (string) ($filial->codigo ?? ''),
+                            'label' => ($filial->codigo ?? '').' - '.trim($filial->contato ?? ''),
+                        ];
+                    })
+                    ->filter(function ($filial) {
+                        return ! empty($filial['value']);
+                    })
+                    ->values();
+            });
 
             return response()->json([
                 'success' => true,
@@ -49,7 +57,7 @@ class FilialController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Erro ao buscar filiais',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar as filiais. Tente novamente.',
             ], 500);
         }
     }
@@ -57,7 +65,7 @@ class FilialController extends Controller
     /**
      * Buscar filial específica por código
      *
-     * @param string $codigo
+     * @param  string  $codigo
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($codigo)
@@ -69,7 +77,7 @@ class FilialController extends Controller
                 ->where('CODIGO', $codigo)
                 ->first();
 
-            if (!$filial) {
+            if (! $filial) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Filial não encontrada',
@@ -98,7 +106,7 @@ class FilialController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Erro ao buscar filial',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar essa filial. Tente novamente.',
             ], 500);
         }
     }
@@ -106,7 +114,6 @@ class FilialController extends Controller
     /**
      * Buscar filiais com filtros customizados
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function search(Request $request)
@@ -114,7 +121,7 @@ class FilialController extends Controller
         try {
             $query = DB::connection('oracle')
                 ->table('PCFILIAL')
-                ->select('CODIGO', 'CONTATO', 'CGC');
+                ->select('CODIGO', 'CONTATO');
 
             // Filtro por códigos específicos
             if ($request->has('codigos')) {
@@ -137,7 +144,7 @@ class FilialController extends Controller
 
             // Filtro por nome
             if ($request->has('nome')) {
-                $query->where('CONTATO', 'like', '%' . $request->nome . '%');
+                $query->where('CONTATO', 'like', '%'.$request->nome.'%');
             }
 
             $filiais = $query
@@ -146,14 +153,11 @@ class FilialController extends Controller
                 ->map(function ($filial) {
                     return [
                         'value' => (string) ($filial->codigo ?? ''),
-                        'label' => ($filial->codigo ?? '') . ' - ' . trim($filial->contato ?? ''),
-                        'cnpj' => $filial->cgc ?? '',
-                        'codigo' => $filial->codigo ?? '',
-                        'nome' => trim($filial->contato ?? ''),
+                        'label' => ($filial->codigo ?? '').' - '.trim($filial->contato ?? ''),
                     ];
                 })
                 ->filter(function ($filial) {
-                    return !empty($filial['value']);
+                    return ! empty($filial['value']);
                 })
                 ->values();
 
@@ -170,7 +174,7 @@ class FilialController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Erro ao buscar filiais',
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível buscar as filiais. Tente novamente.',
             ], 500);
         }
     }

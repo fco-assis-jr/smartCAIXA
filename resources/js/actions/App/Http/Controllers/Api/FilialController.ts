@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Api\FilialController::index
- * @see app/Http/Controllers/Api/FilialController.php:16
+ * @see app/Http/Controllers/Api/FilialController.php:22
  * @route '/smartcaixa/api/filiais'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
 export const search = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ search.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
 search.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ search.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
 search.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -112,7 +112,7 @@ search.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
 search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -122,7 +122,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
     const searchForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -132,7 +132,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
         searchForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Api\FilialController::search
- * @see app/Http/Controllers/Api/FilialController.php:112
+ * @see app/Http/Controllers/Api/FilialController.php:119
  * @route '/smartcaixa/api/filiais/search'
  */
         searchForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -157,7 +157,7 @@ search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     search.form = searchForm
 /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
 export const show = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -172,7 +172,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
 show.url = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -200,7 +200,7 @@ show.url = (args: { codigo: string | number } | [codigo: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
 show.get = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -209,7 +209,7 @@ show.get = (args: { codigo: string | number } | [codigo: string | number ] | str
 })
 /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
 show.head = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -219,7 +219,7 @@ show.head = (args: { codigo: string | number } | [codigo: string | number ] | st
 
     /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
     const showForm = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -229,7 +229,7 @@ show.head = (args: { codigo: string | number } | [codigo: string | number ] | st
 
             /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
         showForm.get = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -238,7 +238,7 @@ show.head = (args: { codigo: string | number } | [codigo: string | number ] | st
         })
             /**
 * @see \App\Http\Controllers\Api\FilialController::show
- * @see app/Http/Controllers/Api/FilialController.php:63
+ * @see app/Http/Controllers/Api/FilialController.php:71
  * @route '/smartcaixa/api/filiais/{codigo}'
  */
         showForm.head = (args: { codigo: string | number } | [codigo: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

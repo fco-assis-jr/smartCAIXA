@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\PesquisarVendas;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\FilialController;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -17,7 +17,7 @@ class ProdutosPorDescricaoController extends Controller
     public function index(): Response
     {
         // Obter filiais do FilialController
-        $filialController = new FilialController();
+        $filialController = new FilialController;
         $response = $filialController->index();
         $data = $response->getData(true);
         $filiais = $data['data'] ?? [];
@@ -84,6 +84,7 @@ class ProdutosPorDescricaoController extends Controller
             // Converter para UTF-8
             $produtosConvertidos = array_map(function ($produto) {
                 $produtoArray = (array) $produto;
+
                 return [
                     'CODAUXILIAR' => $produtoArray['codauxiliar'] ?? '',
                     'CODPROD' => $produtoArray['codprod'] ?? '',
@@ -97,9 +98,13 @@ class ProdutosPorDescricaoController extends Controller
                 'produtos' => $produtosConvertidos,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Erro ao buscar produtos para autocomplete', [
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao buscar produtos: ' . $e->getMessage(),
+                'message' => 'Não foi possível buscar os produtos. Tente novamente.',
             ], 500);
         }
     }
@@ -113,13 +118,30 @@ class ProdutosPorDescricaoController extends Controller
             $request->validate([
                 'filial' => 'required',
                 'codauxiliares' => 'required|array',
-                'data' => 'required|date',
+                'dataInicio' => 'required|date',
+                'dataFim' => 'required|date|after_or_equal:dataInicio',
+                'caixa' => 'nullable|string|max:20',
+                'valor' => 'nullable|numeric|min:0',
             ]);
 
             // Converter array de códigos para string IN
             $codauxiliares = implode(',', array_map(function ($cod) {
                 return "'{$cod}'";
             }, $request->codauxiliares));
+
+            // Caixa e valor são filtros opcionais — só entram na consulta se informados.
+            $filtrosOpcionais = '';
+            $paramsOpcionais = [];
+
+            if ($request->filled('caixa')) {
+                $filtrosOpcionais .= ' AND S.CAIXA = :caixa';
+                $paramsOpcionais['caixa'] = $request->caixa;
+            }
+
+            if ($request->filled('valor')) {
+                $filtrosOpcionais .= ' AND ROUND(M.QT * M.PUNIT, 2) = :valor';
+                $paramsOpcionais['valor'] = $request->valor;
+            }
 
             $vendas = DB::connection('oracle')
                 ->select("
@@ -140,17 +162,20 @@ class ProdutosPorDescricaoController extends Controller
                     WHERE M.CODFILIAL = :filial
                         AND M.DTCANCEL IS NULL
                         AND M.CODAUXILIAR IN ({$codauxiliares})
-                        AND M.DTMOV = TO_DATE(:data, 'YYYY-MM-DD')
+                        AND M.DTMOV BETWEEN TO_DATE(:dataInicio, 'YYYY-MM-DD') AND TO_DATE(:dataFim, 'YYYY-MM-DD')
                         AND M.CODOPER = 'S'
+                        {$filtrosOpcionais}
                     ORDER BY M.CODPROD
-                ", [
+                ", array_merge([
                     'filial' => $request->filial,
-                    'data' => $request->data,
-                ]);
+                    'dataInicio' => $request->dataInicio,
+                    'dataFim' => $request->dataFim,
+                ], $paramsOpcionais));
 
             // Converter para UTF-8 e tipos corretos
             $vendasConvertidas = array_map(function ($venda) {
                 $vendaArray = (array) $venda;
+
                 return [
                     'CODAUXILIAR' => is_string($vendaArray['codauxiliar'] ?? '') ? iconv('Windows-1252', 'UTF-8//IGNORE', $vendaArray['codauxiliar']) : $vendaArray['codauxiliar'],
                     'CODPROD' => is_string($vendaArray['codprod'] ?? '') ? iconv('Windows-1252', 'UTF-8//IGNORE', $vendaArray['codprod']) : $vendaArray['codprod'],
@@ -170,9 +195,13 @@ class ProdutosPorDescricaoController extends Controller
                 'vendas' => $vendasConvertidas,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Erro ao buscar vendas por produto', [
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao buscar vendas: ' . $e->getMessage(),
+                'message' => 'Não foi possível buscar as vendas. Tente novamente.',
             ], 500);
         }
     }

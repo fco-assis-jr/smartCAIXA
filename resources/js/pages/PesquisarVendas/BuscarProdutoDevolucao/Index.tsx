@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import { ComingSoon } from '@/components/coming-soon';
 import Heading from '@/components/heading';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { dashboard } from '@/routes';
@@ -9,16 +10,14 @@ export default function BuscarProdutoDevolucao() {
         <>
             <Head title="Consultar Devolução" />
 
-            <div className="space-y-6">
+            <div className="px-4 py-6">
                 <Heading
                     title="Consultar Devolução"
                     description="Localize vendas de produtos para processar devoluções"
                 />
 
-                <div className="rounded-lg border bg-card p-6">
-                    <p className="text-muted-foreground">
-                        Funcionalidade em desenvolvimento...
-                    </p>
+                <div className="mt-6">
+                    <ComingSoon description="A consulta de devoluções ainda está sendo construída e chega em breve." />
                 </div>
             </div>
         </>
@@ -30,7 +29,10 @@ BuscarProdutoDevolucao.layout = (page: React.ReactNode) => (
         breadcrumbs={[
             { title: 'Dashboard', href: dashboard.url() },
             { title: 'Consultar Vendas', href: '#' },
-            { title: 'Consultar Devolução', href: pesquisarVendas.buscarProdutoDevolucao.index.url() },
+            {
+                title: 'Consultar Devolução',
+                href: pesquisarVendas.buscarProdutoDevolucao.index.url(),
+            },
         ]}
     >
         {page}
