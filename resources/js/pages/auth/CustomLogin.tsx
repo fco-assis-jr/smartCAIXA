@@ -13,12 +13,14 @@ export default function CustomLoginPage() {
                     <div className="flex justify-center gap-2 md:justify-start">
                         <a
                             href="/"
-                            className="flex items-center gap-2 font-medium"
+                            className="flex items-center gap-2 font-display font-bold"
                         >
                             <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                                <AppLogoIcon className="size-5" />
+                                <AppLogoIcon className="size-4.5" />
                             </div>
-                            <span className="text-lg">SmartCAIXA</span>
+                            <span className="text-lg tracking-tight">
+                                Smart<span className="text-primary">CAIXA</span>
+                            </span>
                         </a>
                     </div>
                     <div className="flex flex-1 items-center justify-center">
@@ -28,101 +30,72 @@ export default function CustomLoginPage() {
                     </div>
                 </div>
 
-                {/* Lado direito - Imagem/Banner */}
-                <div className="relative hidden bg-muted lg:block">
-                    <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/5">
-                        <div className="max-w-md space-y-4 p-8 text-center">
-                            <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">
-                                <AppLogoIcon className="size-12 text-primary" />
+                {/* Lado direito - Console da operação */}
+                <div className="relative hidden overflow-hidden bg-sidebar lg:block">
+                    <div
+                        className="absolute inset-0 opacity-40"
+                        style={{
+                            backgroundImage:
+                                'radial-gradient(circle, oklch(1 0 0 / 0.05) 1px, transparent 1px)',
+                            backgroundSize: '22px 22px',
+                        }}
+                    />
+                    <div
+                        className="absolute inset-x-0 top-0 h-64"
+                        style={{
+                            background:
+                                'radial-gradient(60% 100% at 50% 0%, oklch(0.73 0.175 57 / 0.18), transparent)',
+                        }}
+                    />
+
+                    <div className="relative z-10 flex h-full flex-col justify-between p-10 text-sidebar-foreground">
+                        <div className="flex items-center gap-2 font-display font-bold">
+                            <div className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                                <AppLogoIcon className="size-4.5" />
                             </div>
-                            <h2 className="text-3xl font-bold">
-                                Sistema de Gestão
+                            <span className="text-lg tracking-tight">
+                                Smart
+                                <span className="text-sidebar-primary">
+                                    CAIXA
+                                </span>
+                            </span>
+                        </div>
+
+                        <div className="max-w-md space-y-6">
+                            <h2 className="font-display text-3xl leading-tight font-bold">
+                                O painel de operação da sua loja.
                             </h2>
-                            <p className="text-lg text-muted-foreground">
-                                Controle total das operações do seu caixa com
-                                segurança e eficiência
+                            <p className="text-sidebar-foreground/65">
+                                Baixas de estoque, consulta de vendas e
+                                reconexão de caixas — tudo integrado ao ERP, num
+                                só lugar.
                             </p>
-                            <div className="mt-8 grid gap-4 text-left">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                                        <svg
-                                            className="size-4 text-primary"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold">
-                                            Gestão de Baixas
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Controle eficiente de avarias e
-                                            perdas
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                                        <svg
-                                            className="size-4 text-primary"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold">
-                                            Ferramentas de Gestão
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Recursos avançados para
-                                            administração
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                                        <svg
-                                            className="size-4 text-primary"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold">
-                                            Integração Oracle
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Conexão direta com banco de dados
-                                            corporativo
-                                        </p>
-                                    </div>
-                                </div>
+
+                            <div className="space-y-2.5 border-t border-sidebar-border pt-6 font-mono text-sm text-sidebar-foreground/70">
+                                <p>
+                                    <span className="text-sidebar-primary">
+                                        &gt;
+                                    </span>{' '}
+                                    Baixa de produtos com controle de estoque
+                                </p>
+                                <p>
+                                    <span className="text-sidebar-primary">
+                                        &gt;
+                                    </span>{' '}
+                                    Consulta de vendas integrada ao ERP
+                                </p>
+                                <p>
+                                    <span className="text-sidebar-primary">
+                                        &gt;
+                                    </span>{' '}
+                                    Reconexão de caixas com o servidor central
+                                </p>
                             </div>
                         </div>
+
+                        <p className="font-mono text-xs text-sidebar-foreground/40">
+                            Autenticação validada diretamente no ERP.
+                        </p>
                     </div>
                 </div>
             </div>

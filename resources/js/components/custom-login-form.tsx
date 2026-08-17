@@ -108,8 +108,8 @@ export function CustomLoginForm({
                         className={cn(
                             'rounded-lg border p-4 text-sm',
                             isRateLimited
-                                ? 'border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                                : 'border-destructive/50 bg-destructive/10 text-destructive'
+                                ? 'border-warning/50 bg-warning/10 text-warning'
+                                : 'border-destructive/50 bg-destructive/10 text-destructive',
                         )}
                     >
                         <div className="flex items-start gap-3">
@@ -126,7 +126,7 @@ export function CustomLoginForm({
                                 </p>
                                 <p>{errors.usuario}</p>
                                 {countdown !== null && countdown > 0 && (
-                                    <div className="mt-3 flex items-center gap-2 rounded-md bg-amber-500/20 px-3 py-2">
+                                    <div className="mt-3 flex items-center gap-2 rounded-md bg-warning/20 px-3 py-2">
                                         <Clock className="size-4 animate-pulse" />
                                         <p className="text-xs font-medium">
                                             Aguarde {countdown} segundo

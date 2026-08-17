@@ -1,8 +1,20 @@
-import { Head } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Head, Link, usePage } from '@inertiajs/react';
+import {
+    ArrowRight,
+    FileSearch,
+    PackageMinus,
+    Receipt,
+    RotateCcw,
+    Wrench,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Heading from '@/components/heading';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
+import baixaProduto from '@/routes/baixa-produto';
+import ferramentas from '@/routes/ferramentas';
+import pesquisarVendas from '@/routes/pesquisar-vendas';
+import type { BreadcrumbItem, SharedData } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -11,25 +23,148 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type Tool = {
+    title: string;
+    description: string;
+    href: string;
+    icon: typeof PackageMinus;
+};
+
+type Section = {
+    label: string;
+    tools: Tool[];
+};
+
+const sections: Section[] = [
+    {
+        label: 'Operação de loja',
+        tools: [
+            {
+                title: 'Baixa Produto',
+                description:
+                    'Registre vencimento, avaria, doação e outras baixas de estoque.',
+                href: baixaProduto.index().url,
+                icon: PackageMinus,
+            },
+        ],
+    },
+    {
+        label: 'Consultar vendas',
+        tools: [
+            {
+                title: 'Vendas por Produto',
+                description:
+                    'Busque vendas por descrição, código ou peso (gramatura).',
+                href: pesquisarVendas.produtosPorDescricao.index().url,
+                icon: FileSearch,
+            },
+            {
+                title: 'Consultar Devolução',
+                description:
+                    'Localize a venda original de um produto para devolução.',
+                href: pesquisarVendas.buscarProdutoDevolucao.index().url,
+                icon: RotateCcw,
+            },
+            {
+                title: 'Itens da Nota Fiscal',
+                description: 'Veja todos os itens vendidos em uma nota fiscal.',
+                href: pesquisarVendas.buscarItensNota.index().url,
+                icon: Receipt,
+            },
+        ],
+    },
+    {
+        label: 'Ferramentas',
+        tools: [
+            {
+                title: 'DBLink',
+                description:
+                    'Reconecte um caixa ao servidor central quando ele cair.',
+                href: ferramentas.dblink.index().url,
+                icon: Wrench,
+            },
+        ],
+    },
+];
+
+function useClock() {
+    const [now, setNow] = useState<Date | null>(null);
+
+    useEffect(() => {
+        const tick = () => setNow(new Date());
+        const immediate = setTimeout(tick, 0);
+        const interval = setInterval(tick, 1000);
+        return () => {
+            clearTimeout(immediate);
+            clearInterval(interval);
+        };
+    }, []);
+
+    return now;
+}
+
 export default function Dashboard() {
+    const { auth } = usePage<SharedData>().props;
+    const now = useClock();
+    const firstName = auth.user.name?.split(' ')[0] || auth.user.name;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+            <div className="flex flex-1 flex-col gap-8 p-4 md:p-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <Heading
+                        title={`Olá, ${firstName}`}
+                        description="Escolha uma ferramenta abaixo para começar."
+                    />
+                    <div className="rounded-md border bg-card px-3 py-2 text-right shadow-xs">
+                        <div className="font-mono text-lg leading-none font-semibold tabular-nums">
+                            {now ? now.toLocaleTimeString('pt-BR') : '--:--:--'}
+                        </div>
+                        <div className="mt-0.5 text-xs text-muted-foreground capitalize">
+                            {now
+                                ? now.toLocaleDateString('pt-BR', {
+                                      weekday: 'long',
+                                      day: '2-digit',
+                                      month: 'long',
+                                  })
+                                : ''}
+                        </div>
                     </div>
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                </div>
+
+                {sections.map((section) => (
+                    <section key={section.label} className="space-y-3">
+                        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                            {section.label}
+                        </h3>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {section.tools.map((tool) => (
+                                <Link
+                                    key={tool.href}
+                                    href={tool.href}
+                                    prefetch
+                                    className="group flex items-start gap-4 rounded-lg border bg-card p-4 shadow-xs transition-colors hover:border-primary/40 hover:bg-accent/40"
+                                >
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                        <tool.icon className="size-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <h4 className="font-display text-sm font-bold">
+                                                {tool.title}
+                                            </h4>
+                                            <ArrowRight className="size-3.5 -translate-x-1 text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                                        </div>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            {tool.description}
+                                        </p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                ))}
             </div>
         </AppLayout>
     );

@@ -23,7 +23,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupLabel>Operação</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => {
                     // If item has subitems, render collapsible menu
@@ -54,12 +54,19 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                                     <SidebarMenuSubButton
                                                         asChild
                                                         isActive={
-                                                            !!(subItem.href &&
-                                                            isCurrentUrl(subItem.href))
+                                                            !!(
+                                                                subItem.href &&
+                                                                isCurrentUrl(
+                                                                    subItem.href,
+                                                                )
+                                                            )
                                                         }
                                                     >
                                                         <Link
-                                                            href={subItem.href || '#'}
+                                                            href={
+                                                                subItem.href ||
+                                                                '#'
+                                                            }
                                                             prefetch
                                                         >
                                                             <span>
@@ -81,7 +88,9 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={!!(item.href && isCurrentUrl(item.href))}
+                                isActive={
+                                    !!(item.href && isCurrentUrl(item.href))
+                                }
                                 tooltip={{ children: item.title }}
                             >
                                 <Link href={item.href || '#'} prefetch>

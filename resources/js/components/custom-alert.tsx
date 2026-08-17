@@ -42,26 +42,26 @@ export function CustomAlert({
     const getIcon = () => {
         switch (variant) {
             case 'error':
-                return <XCircle className="h-6 w-6 text-red-600" />;
+                return <XCircle className="h-6 w-6 text-destructive" />;
             case 'warning':
-                return <AlertCircle className="h-6 w-6 text-yellow-600" />;
+                return <AlertCircle className="h-6 w-6 text-warning" />;
             case 'success':
-                return <CheckCircle2 className="h-6 w-6 text-green-600" />;
+                return <CheckCircle2 className="h-6 w-6 text-success" />;
             default:
-                return <Info className="h-6 w-6 text-blue-600" />;
+                return <Info className="h-6 w-6 text-info" />;
         }
     };
 
     const getIconBackgroundColor = () => {
         switch (variant) {
             case 'error':
-                return 'bg-red-100';
+                return 'bg-destructive/10';
             case 'warning':
-                return 'bg-yellow-100';
+                return 'bg-warning/15';
             case 'success':
-                return 'bg-green-100';
+                return 'bg-success/10';
             default:
-                return 'bg-blue-100';
+                return 'bg-info/10';
         }
     };
 
@@ -70,23 +70,23 @@ export function CustomAlert({
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <div className="flex items-start gap-4">
-                        <div className={`shrink-0 rounded-full p-2 ${getIconBackgroundColor()}`}>
+                        <div
+                            className={`shrink-0 rounded-full p-2 ${getIconBackgroundColor()}`}
+                        >
                             {getIcon()}
                         </div>
                         <div className="flex-1 pt-1">
                             <AlertDialogTitle className="text-left">
                                 {getTitle()}
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-left mt-2">
+                            <AlertDialogDescription className="mt-2 text-left">
                                 {message}
                             </AlertDialogDescription>
                         </div>
                     </div>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={onClose}>
-                        OK
-                    </AlertDialogAction>
+                    <AlertDialogAction onClick={onClose}>OK</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
