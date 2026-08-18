@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import autoTable, { type HAlignType } from 'jspdf-autotable';
 
 type Produto = {
     CODPROD: string;
@@ -9,6 +9,8 @@ type Produto = {
     UNIDADE: string;
     PRECO: number;
     quantidade: number;
+    /** Só preenchido em baixas de Vencimento (dd/mm/aaaa) — ver Index.tsx. */
+    dataVencimento?: string;
 };
 
 type GerarPDFParams = {
@@ -59,7 +61,13 @@ const carregarLogo = async (): Promise<string | null> => {
  * OBSERVAÇÃO e ASSINATURAS — dá ao documento uma linguagem visual única de
  * formulário oficial, em vez de blocos de texto soltos.
  */
-const desenharEyebrow = (doc: jsPDF, texto: string, x: number, y: number, largura: number) => {
+const desenharEyebrow = (
+    doc: jsPDF,
+    texto: string,
+    x: number,
+    y: number,
+    largura: number,
+) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(...COR_CINZA);
@@ -79,7 +87,13 @@ const desenharEyebrow = (doc: jsPDF, texto: string, x: number, y: number, largur
  * a informação que mais importa achar rápido ao folhear uma pilha de
  * baixas impressas.
  */
-const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larguraMaxima = 80) => {
+const desenharCarimbo = (
+    doc: jsPDF,
+    texto: string,
+    cx: number,
+    cy: number,
+    larguraMaxima = 80,
+) => {
     const espacamento = 0.4;
 
     // Tipos de baixa mais longos (ex. "Devolução ao Fornecedor") não podem
@@ -92,7 +106,11 @@ const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larg
     // medida leva uma margem de segurança de 15% além do espaçamento extra
     // somado à mão — sem isso, textos longos ("Devolução ao Fornecedor")
     // furam a moldura em vez de encolher a tempo.
-    const medir = () => (doc.getTextWidth(texto) + espacamento * Math.max(0, texto.length - 1)) * 1.15 + 16;
+    const medir = () =>
+        (doc.getTextWidth(texto) +
+            espacamento * Math.max(0, texto.length - 1)) *
+            1.15 +
+        16;
     doc.setFontSize(fontSize);
     let largura = medir();
     while (largura > larguraMaxima && fontSize > 6.5) {
@@ -104,7 +122,12 @@ const desenharCarimbo = (doc: jsPDF, texto: string, cx: number, cy: number, larg
 
     const retangulo = (inset: number, espessura: number) => {
         doc.setLineWidth(espessura);
-        doc.rect(cx - largura / 2 + inset, cy - altura / 2 + inset, largura - inset * 2, altura - inset * 2);
+        doc.rect(
+            cx - largura / 2 + inset,
+            cy - altura / 2 + inset,
+            largura - inset * 2,
+            altura - inset * 2,
+        );
     };
 
     doc.setDrawColor(...COR_AMBAR);
@@ -179,34 +202,70 @@ export const gerarPDFBaixaProduto = async ({
     // ---------- Tabela de produtos ----------
     desenharEyebrow(doc, 'PRODUTOS', margin, 51, larguraUtil);
 
+    // Coluna de vencimento só entra na tabela quando a baixa é desse tipo —
+    // pra outros tipos (avaria, doação etc.) a data não existe, então a
+    // tabela não perde a coluna por nada.
+    const temVencimento = produtos.some((produto) => produto.dataVencimento);
+
     const produtosData = produtos.map((produto) => {
         const preco = Number(produto.PRECO || 0);
         const subtotal = preco * produto.quantidade;
-        return [
+        const linha = [
             produto.CODAUXILIAR,
             produto.CODPROD,
             produto.DESCRICAO,
             produto.EMBALAGEM,
             produto.quantidade.toString(),
-            `R$ ${preco.toFixed(2)}`,
-            `R$ ${subtotal.toFixed(2)}`,
         ];
+        if (temVencimento) {
+            linha.push(produto.dataVencimento || '—');
+        }
+        linha.push(`R$ ${preco.toFixed(2)}`, `R$ ${subtotal.toFixed(2)}`);
+        return linha;
     });
+
+    const cabecalho = [
+        'Cód. Aux.',
+        'Cód. Prod.',
+        'Descrição',
+        'Emb.',
+        'Qtd',
+        ...(temVencimento ? ['Vencimento'] : []),
+        'Preço Unit.',
+        'Subtotal',
+    ];
+
+    const right: HAlignType = 'right';
+    const center: HAlignType = 'center';
+
+    const columnStyles: Record<
+        number,
+        { cellWidth: number; font?: string; halign?: HAlignType }
+    > = temVencimento
+        ? {
+              0: { cellWidth: 18, font: 'courier' },
+              1: { cellWidth: 18, font: 'courier' },
+              2: { cellWidth: 48 },
+              3: { cellWidth: 12 },
+              4: { cellWidth: 12, halign: right },
+              5: { cellWidth: 22, halign: center },
+              6: { cellWidth: 24, halign: right },
+              7: { cellWidth: 28, halign: right },
+          }
+        : {
+              0: { cellWidth: 20, font: 'courier' },
+              1: { cellWidth: 20, font: 'courier' },
+              2: { cellWidth: 58 },
+              3: { cellWidth: 14 },
+              4: { cellWidth: 14, halign: right },
+              5: { cellWidth: 26, halign: right },
+              6: { cellWidth: 30, halign: right },
+          };
 
     autoTable(doc, {
         startY: 56,
         margin: { left: margin, right: margin, bottom: 16 },
-        head: [
-            [
-                'Cód. Aux.',
-                'Cód. Prod.',
-                'Descrição',
-                'Emb.',
-                'Qtd',
-                'Preço Unit.',
-                'Subtotal',
-            ],
-        ],
+        head: [cabecalho],
         body: produtosData,
         // Sem "foot" aqui de propósito: o foot do jspdf-autotable repete em
         // toda página, o que mostraria "Total Geral" já na 1ª página mesmo
@@ -227,15 +286,7 @@ export const gerarPDFBaixaProduto = async ({
             fontSize: 8.5,
             textColor: COR_TINTA,
         },
-        columnStyles: {
-            0: { cellWidth: 20, font: 'courier' },
-            1: { cellWidth: 20, font: 'courier' },
-            2: { cellWidth: 58 },
-            3: { cellWidth: 14 },
-            4: { cellWidth: 14, halign: 'right' },
-            5: { cellWidth: 26, halign: 'right' },
-            6: { cellWidth: 30, halign: 'right' },
-        },
+        columnStyles,
     });
 
     // @ts-expect-error - jspdf-autotable adiciona lastAutoTable ao objeto doc
@@ -261,8 +312,12 @@ export const gerarPDFBaixaProduto = async ({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(...COR_TINTA);
-    doc.text('Total Geral', pageWidth - margin - 30, cursorY, { align: 'right' });
-    doc.text(`R$ ${totalGeral.toFixed(2)}`, pageWidth - margin, cursorY, { align: 'right' });
+    doc.text('Total Geral', pageWidth - margin - 30, cursorY, {
+        align: 'right',
+    });
+    doc.text(`R$ ${totalGeral.toFixed(2)}`, pageWidth - margin, cursorY, {
+        align: 'right',
+    });
     cursorY += 3;
 
     // ---------- Observação ----------
@@ -283,7 +338,13 @@ export const gerarPDFBaixaProduto = async ({
     // A ordem aqui é real, não decorativa: é o caminho físico que o papel
     // percorre — de quem recebe a mercadoria até a baixa efetivada no caixa
     // — por isso a numeração 01–05 carrega informação, não é enfeite.
-    const assinaturas = ['Recebido por', 'Recepcionista', 'Gerente', 'Fiscal Patrimônio', 'Fiscal de Caixa'];
+    const assinaturas = [
+        'Recebido por',
+        'Recepcionista',
+        'Gerente',
+        'Fiscal Patrimônio',
+        'Fiscal de Caixa',
+    ];
     const espacamento = 13;
 
     garantirEspaco(assinaturas.length * espacamento + 16);
