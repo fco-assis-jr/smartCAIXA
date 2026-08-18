@@ -79,7 +79,7 @@ login.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     login.form = loginForm
 /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:142
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:129
  * @route '/logout'
  */
 export const logout = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ logout.definition = {
 
 /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:142
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:129
  * @route '/logout'
  */
 logout.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ logout.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:142
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:129
  * @route '/logout'
  */
 logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:142
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:129
  * @route '/logout'
  */
     const logoutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\Auth\CustomLoginController::logout
- * @see app/Http/Controllers/Auth/CustomLoginController.php:142
+ * @see app/Http/Controllers/Auth/CustomLoginController.php:129
  * @route '/logout'
  */
         logoutForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -211,7 +211,7 @@ register.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     register.form = registerForm
 /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
 export const home = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -225,7 +225,7 @@ home.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
 home.url = (options?: RouteQueryOptions) => {
@@ -233,7 +233,7 @@ home.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
 home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -241,7 +241,7 @@ home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
 home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -250,7 +250,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
     const homeForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -259,7 +259,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
         homeForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -267,7 +267,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:29
+ * @see routes/web.php:30
  * @route '/'
  */
         homeForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -282,7 +282,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     home.form = homeForm
 /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -296,7 +296,7 @@ dashboard.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -304,7 +304,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -312,7 +312,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -321,7 +321,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
     const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -330,7 +330,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
         dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -338,7 +338,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:41
+ * @see routes/web.php:42
  * @route '/smartcaixa/dashboard'
  */
         dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
