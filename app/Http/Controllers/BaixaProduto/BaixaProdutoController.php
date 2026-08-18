@@ -109,14 +109,14 @@ class BaixaProdutoController extends Controller
                     DB::raw("ROUND(COLUNA_PRECO(BUSCAPRECOS(E.CODFILIAL, '1', E.CODAUXILIAR, SYSDATE), 'PVENDA'), 2) AS PRECO"),
                 ])
                 ->whereNull('P.DTEXCLUSAO')
-                ->where('E.CODFILIAL', $validated['codFilial']);
-
-            // Ajustar a condição para buscar por código - SEGURO contra SQL Injection
-            $codBusca = $validated['codAuxiliar'];
-            $query->where(function ($q) use ($codBusca) {
-                $q->where('E.CODAUXILIAR', $codBusca)
-                    ->orWhereRaw('TO_CHAR(E.CODPROD) = ?', [$codBusca]); // ✅ SEGURO - usa binding
-            });
+                ->where('E.CODFILIAL', $validated['codFilial'])
+                // Busca só pelo código auxiliar (código de barras) da
+                // PCEMBALAGEM — não pelo CODPROD. Os dois espaços de código
+                // podem colidir (ex.: CODAUXILIAR "970" é um produto, e
+                // CODPROD 970 é outro completamente diferente), então
+                // aceitar as duas coisas na mesma busca já trouxe o produto
+                // errado pro operador.
+                ->where('E.CODAUXILIAR', $validated['codAuxiliar']);
 
             $produto = $query->first();
 
