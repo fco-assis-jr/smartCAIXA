@@ -122,22 +122,17 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     // (confirmar ou cancelar), não deixa bipar o próximo.
     const temPendencia = Boolean(produtoPendente);
 
-    // Foca o campo certo assim que a pendência aparece: a data de
-    // vencimento quando ela é obrigatória (é a informação nova, a
-    // quantidade já vem com 1 preenchido), senão a própria quantidade
-    // (selecionada, pra já poder digitar por cima do "1" default).
+    // Foca a quantidade assim que a pendência aparece — igual em todos os
+    // tipos de baixa, inclusive Vencimento (Tab leva pro campo de data
+    // depois, na ordem em que aparecem na tela).
     useEffect(() => {
         if (!temPendencia) return;
 
         setTimeout(() => {
-            if (ehVencimento) {
-                dataVencimentoInputRef.current?.focus();
-            } else {
-                quantidadeInputRef.current?.focus();
-                quantidadeInputRef.current?.select();
-            }
+            quantidadeInputRef.current?.focus();
+            quantidadeInputRef.current?.select();
         }, 100);
-    }, [temPendencia, ehVencimento]);
+    }, [temPendencia]);
 
     // A filial e o tipo de baixa travam assim que o primeiro produto é adicionado —
     // uma baixa não pode misturar filiais ou tipos diferentes no mesmo relatório.
