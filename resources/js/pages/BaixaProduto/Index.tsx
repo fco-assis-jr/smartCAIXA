@@ -1,7 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import {
     Calendar as CalendarIcon,
     CheckCircle2,
@@ -17,7 +16,6 @@ import { type ComboboxOption } from '@/components/generic-combobox';
 import Heading from '@/components/heading';
 import { TipoBaixaCombobox } from '@/components/tipo-baixa-combobox';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import {
     InputGroup,
@@ -25,11 +23,6 @@ import {
     InputGroupInput,
 } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 import { Spinner } from '@/components/ui/spinner';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import { gerarPDFBaixaProduto } from '@/lib/gerar-pdf-baixa';
@@ -70,17 +63,20 @@ type AlertState = {
 export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [produtos, setProdutos] = useState<Produto[]>([]);
-    const [produtoEncontrado, setProdutoEncontrado] = useState<Produto | null>(
+    // Produto encontrado pela busca, aguardando confirmação de quantidade
+    // (e data de vencimento, se for o caso) antes de entrar na lista.
+    const [produtoPendente, setProdutoPendente] = useState<Produto | null>(
+        null,
+    );
+    // Último item efetivamente confirmado — só pra mostrar o feedback
+    // visual, já está na lista.
+    const [ultimoAdicionado, setUltimoAdicionado] = useState<Produto | null>(
         null,
     );
     const [buscandoProduto, setBuscandoProduto] = useState(false);
     const [codAuxiliar, setCodAuxiliar] = useState('');
-    // Lembra a última data escolhida só pra pré-marcar no calendário — a
-    // maioria das bipadas em sequência é do mesmo lote/validade.
-    const [ultimaDataVencimento, setUltimaDataVencimento] = useState<
-        Date | undefined
-    >(undefined);
-    const [calendarioAberto, setCalendarioAberto] = useState(false);
+    const [quantidadeDigitada, setQuantidadeDigitada] = useState('1');
+    const [dataDigitada, setDataDigitada] = useState('');
     const [alert, setAlert] = useState<AlertState>({
         open: false,
         message: '',
@@ -92,8 +88,10 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         setAlert({ open: false, message: '', variant: 'default' });
     }, []);
 
-    // Ref pra manter o foco no campo de código entre um escaneio e outro
+    // Refs pra controlar foco entre código, quantidade e data de vencimento
     const codAuxiliarInputRef = useRef<HTMLInputElement>(null);
+    const quantidadeInputRef = useRef<HTMLInputElement>(null);
+    const dataVencimentoInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData } = useForm({
         codFilial: '',
@@ -119,12 +117,27 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const contextoDefinido = Boolean(data.codFilial && data.tipoBaixa);
     const ehVencimento = data.tipoBaixa === TIPO_VENCIMENTO;
 
-    // Produto já encontrado mas ainda esperando a data de vencimento — só
-    // existe pra esse tipo de baixa; enquanto isso não for resolvido
-    // (escolher data ou cancelar), não deixa bipar o próximo.
-    const pendenteDeData = Boolean(
-        ehVencimento && produtoEncontrado && !produtoEncontrado.dataVencimento,
-    );
+    // Produto encontrado, esperando confirmação de quantidade (e data de
+    // vencimento, se for o caso) — enquanto isso não for resolvido
+    // (confirmar ou cancelar), não deixa bipar o próximo.
+    const temPendencia = Boolean(produtoPendente);
+
+    // Foca o campo certo assim que a pendência aparece: a data de
+    // vencimento quando ela é obrigatória (é a informação nova, a
+    // quantidade já vem com 1 preenchido), senão a própria quantidade
+    // (selecionada, pra já poder digitar por cima do "1" default).
+    useEffect(() => {
+        if (!temPendencia) return;
+
+        setTimeout(() => {
+            if (ehVencimento) {
+                dataVencimentoInputRef.current?.focus();
+            } else {
+                quantidadeInputRef.current?.focus();
+                quantidadeInputRef.current?.select();
+            }
+        }, 100);
+    }, [temPendencia, ehVencimento]);
 
     // A filial e o tipo de baixa travam assim que o primeiro produto é adicionado —
     // uma baixa não pode misturar filiais ou tipos diferentes no mesmo relatório.
@@ -149,6 +162,46 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     // com validades diferentes é lote diferente, não pode juntar.
     const chaveProduto = (produto: Produto) =>
         `${produto.CODAUXILIAR}::${produto.dataVencimento ?? ''}`;
+
+    // Aceita vírgula ou ponto como separador decimal (produtos por peso
+    // costumam ter quantidade fracionada, ex. 0.485 KG).
+    const parseQuantidade = (texto: string): number | undefined => {
+        const valor = parseFloat(texto.replace(',', '.').trim());
+        return Number.isFinite(valor) && valor > 0 ? valor : undefined;
+    };
+
+    // Máscara dd/mm/aaaa enquanto digita — só dígitos contam, o resto (as
+    // barras) é inserido automaticamente.
+    const formatarDataDigitada = (valor: string) => {
+        const digitos = valor.replace(/\D/g, '').slice(0, 8);
+        if (digitos.length > 4) {
+            return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+        }
+        if (digitos.length > 2) {
+            return `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+        }
+        return digitos;
+    };
+
+    // Valida de verdade (dia/mês/ano existem no calendário) — new Date()
+    // "rola" datas inválidas (31/02 vira 03/03) em vez de rejeitar, então
+    // confere se os valores voltam iguais depois de montar a data.
+    const parseDataDigitada = (texto: string): Date | undefined => {
+        const match = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return undefined;
+
+        const dia = Number(match[1]);
+        const mes = Number(match[2]);
+        const ano = Number(match[3]);
+        const data = new Date(ano, mes - 1, dia);
+
+        const valida =
+            data.getFullYear() === ano &&
+            data.getMonth() === mes - 1 &&
+            data.getDate() === dia;
+
+        return valida ? data : undefined;
+    };
 
     const adicionarOuSomarProduto = (produto: Produto) => {
         setProdutos((atual) => {
@@ -175,7 +228,7 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         // Evita duas buscas em paralelo pro mesmo escaneio (ex.: Enter e o
         // blur causado pelo campo desabilitando durante a busca) — sem
         // isso, cada bipada podia entrar na lista em dobro.
-        if (buscandoProduto || pendenteDeData) return;
+        if (buscandoProduto || temPendencia) return;
 
         if (!codAuxiliar.trim() || !data.codFilial) {
             if (!data.codFilial) {
@@ -198,27 +251,15 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             );
 
             if (response.data.produto) {
-                const produto = { ...response.data.produto, quantidade: 1 };
+                // Pausa pra confirmar quantidade (e data de vencimento, se
+                // for o caso) — só entra na lista em confirmarAdicao().
+                setProdutoPendente({
+                    ...response.data.produto,
+                    quantidade: 1,
+                });
+                setQuantidadeDigitada('1');
+                setDataDigitada('');
                 setCodAuxiliar('');
-
-                if (ehVencimento) {
-                    // Pausa pra pedir a data — só entra na lista depois de
-                    // confirmarVencimento(). Sem data anterior nessa sessão,
-                    // já abre o calendário direto (economiza um clique); se
-                    // já tem uma data lembrada, deixa o botão "Repetir"
-                    // como o caminho rápido em vez de abrir os dois juntos.
-                    setProdutoEncontrado(produto);
-                    setCalendarioAberto(!ultimaDataVencimento);
-                } else {
-                    adicionarOuSomarProduto(produto);
-                    setProdutoEncontrado(produto);
-
-                    // Foco de volta no código pra próxima bipada, sem
-                    // precisar de nenhum clique no meio do caminho.
-                    setTimeout(() => {
-                        codAuxiliarInputRef.current?.focus();
-                    }, 100);
-                }
             }
         } catch (error) {
             console.error('Erro ao buscar produto:', error);
@@ -231,27 +272,50 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             } else {
                 showAlert('Erro ao buscar produto', 'error');
             }
-            setProdutoEncontrado(null);
         } finally {
             setBuscandoProduto(false);
         }
     };
 
-    // Fecha o ciclo de uma bipada de Vencimento: escolheu a data no
-    // calendário, agora sim entra na lista (agrupando se já tiver o mesmo
-    // produto com a mesma data).
-    const confirmarVencimento = (dataEscolhida: Date | undefined) => {
-        if (!dataEscolhida || !produtoEncontrado) return;
+    // Fecha o ciclo de uma bipada: quantidade (e data de vencimento, se for
+    // o caso) confirmadas, agora sim entra na lista — soma na linha
+    // existente se já tiver o mesmo produto (mesma data, em Vencimento).
+    const confirmarAdicao = () => {
+        if (!produtoPendente) return;
 
-        const produtoComData = {
-            ...produtoEncontrado,
-            dataVencimento: format(dataEscolhida, 'dd/MM/yyyy'),
+        const quantidade = parseQuantidade(quantidadeDigitada);
+        if (!quantidade) {
+            showAlert(
+                'Quantidade inválida. Informe um valor maior que zero.',
+                'warning',
+            );
+            return;
+        }
+
+        let dataVencimento: string | undefined;
+        if (ehVencimento) {
+            const dataEscolhida = parseDataDigitada(dataDigitada);
+            if (!dataEscolhida) {
+                showAlert(
+                    'Data de vencimento inválida. Use o formato dd/mm/aaaa.',
+                    'warning',
+                );
+                return;
+            }
+            dataVencimento = format(dataEscolhida, 'dd/MM/yyyy');
+        }
+
+        const produtoFinal: Produto = {
+            ...produtoPendente,
+            quantidade,
+            dataVencimento,
         };
 
-        adicionarOuSomarProduto(produtoComData);
-        setUltimaDataVencimento(dataEscolhida);
-        setProdutoEncontrado(produtoComData);
-        setCalendarioAberto(false);
+        adicionarOuSomarProduto(produtoFinal);
+        setUltimoAdicionado(produtoFinal);
+        setProdutoPendente(null);
+        setQuantidadeDigitada('1');
+        setDataDigitada('');
 
         setTimeout(() => {
             codAuxiliarInputRef.current?.focus();
@@ -261,8 +325,9 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     // Descarta a bipada pendente sem adicionar — ex.: escaneou o código
     // errado e quer tentar de novo.
     const cancelarPendente = () => {
-        setProdutoEncontrado(null);
-        setCalendarioAberto(false);
+        setProdutoPendente(null);
+        setQuantidadeDigitada('1');
+        setDataDigitada('');
         setTimeout(() => {
             codAuxiliarInputRef.current?.focus();
         }, 100);
@@ -274,8 +339,8 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
 
     const limparLista = () => {
         setProdutos([]);
-        setProdutoEncontrado(null);
-        setUltimaDataVencimento(undefined);
+        setProdutoPendente(null);
+        setUltimoAdicionado(null);
     };
 
     const finalizarBaixa = async () => {
@@ -423,93 +488,125 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                         disabled={
                                             buscandoProduto ||
                                             !contextoDefinido ||
-                                            pendenteDeData
+                                            temPendencia
                                         }
                                         className="font-mono"
                                         autoFocus
                                     />
                                 </InputGroup>
-                                {pendenteDeData && (
+                                {temPendencia && (
                                     <p className="mt-1.5 text-xs text-warning">
-                                        Informe a data de vencimento abaixo
-                                        antes de bipar o próximo produto.
+                                        Confirme a quantidade
+                                        {ehVencimento &&
+                                            ' e a data de vencimento'}{' '}
+                                        abaixo antes de bipar o próximo produto.
                                     </p>
                                 )}
                             </div>
 
-                            {/* Vencimento: produto já encontrado, mas
-                            precisa da data antes de entrar na lista */}
-                            {pendenteDeData && produtoEncontrado && (
-                                <div className="flex animate-in flex-col gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 duration-300 fade-in slide-in-from-top-2 sm:flex-row sm:items-center">
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="truncate text-sm font-semibold">
-                                            {produtoEncontrado.DESCRICAO}
-                                        </h3>
-                                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                                            <span className="font-mono">
-                                                Cód: {produtoEncontrado.CODPROD}
-                                            </span>
-                                            <span>•</span>
-                                            <span>
-                                                {produtoEncontrado.EMBALAGEM} /{' '}
-                                                {produtoEncontrado.UNIDADE}
-                                            </span>
+                            {/* Produto encontrado: confirma quantidade (e
+                            data de vencimento, se for o caso) antes de
+                            entrar na lista */}
+                            {produtoPendente && (
+                                <div className="flex animate-in flex-col gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 duration-300 fade-in slide-in-from-top-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="truncate text-sm font-semibold">
+                                                {produtoPendente.DESCRICAO}
+                                            </h3>
+                                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                                <span className="font-mono">
+                                                    Cód:{' '}
+                                                    {produtoPendente.CODPROD}
+                                                </span>
+                                                <span>•</span>
+                                                <span>
+                                                    {produtoPendente.EMBALAGEM}{' '}
+                                                    / {produtoPendente.UNIDADE}
+                                                </span>
+                                            </div>
                                         </div>
+                                        <span className="shrink-0 font-mono text-lg font-bold text-warning tabular-nums">
+                                            R${' '}
+                                            {Number(
+                                                produtoPendente.PRECO || 0,
+                                            ).toFixed(2)}
+                                        </span>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {ultimaDataVencimento && (
-                                            <Button
-                                                variant="outline"
-                                                className="border-warning/40"
-                                                onClick={() =>
-                                                    confirmarVencimento(
-                                                        ultimaDataVencimento,
+
+                                    <div className="flex flex-wrap items-end gap-2">
+                                        <div className="space-y-1">
+                                            <Label
+                                                htmlFor="quantidadePendente"
+                                                className="text-xs text-muted-foreground"
+                                            >
+                                                Quantidade
+                                            </Label>
+                                            <Input
+                                                ref={quantidadeInputRef}
+                                                id="quantidadePendente"
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={quantidadeDigitada}
+                                                onChange={(e) =>
+                                                    setQuantidadeDigitada(
+                                                        e.target.value,
                                                     )
                                                 }
-                                            >
-                                                Repetir{' '}
-                                                {format(
-                                                    ultimaDataVencimento,
-                                                    'dd/MM/yyyy',
-                                                )}
-                                            </Button>
-                                        )}
-                                        <Popover
-                                            open={calendarioAberto}
-                                            onOpenChange={setCalendarioAberto}
-                                        >
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="justify-start text-left font-normal"
-                                                >
-                                                    <CalendarIcon className="mr-2 size-4" />
-                                                    {ultimaDataVencimento
-                                                        ? 'Outra data...'
-                                                        : 'Data de vencimento...'}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent
-                                                className="w-auto p-0"
-                                                align="start"
-                                            >
-                                                {/* Sem "selected": o
-                                                react-day-picker trata
-                                                clicar numa data já marcada
-                                                como selecionada como um
-                                                "desmarcar" (onSelect vem
-                                                undefined) — o que travava
-                                                exatamente ao repetir a
-                                                mesma data. */}
-                                                <Calendar
-                                                    mode="single"
-                                                    onSelect={
-                                                        confirmarVencimento
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        confirmarAdicao();
                                                     }
-                                                    locale={ptBR}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                                }}
+                                                className="w-24 font-mono"
+                                            />
+                                        </div>
+
+                                        {ehVencimento && (
+                                            <div className="space-y-1">
+                                                <Label
+                                                    htmlFor="dataVencimentoPendente"
+                                                    className="text-xs text-muted-foreground"
+                                                >
+                                                    Vencimento
+                                                </Label>
+                                                <InputGroup className="w-36">
+                                                    <InputGroupAddon>
+                                                        <CalendarIcon className="size-4" />
+                                                    </InputGroupAddon>
+                                                    <InputGroupInput
+                                                        ref={
+                                                            dataVencimentoInputRef
+                                                        }
+                                                        id="dataVencimentoPendente"
+                                                        value={dataDigitada}
+                                                        onChange={(e) =>
+                                                            setDataDigitada(
+                                                                formatarDataDigitada(
+                                                                    e.target
+                                                                        .value,
+                                                                ),
+                                                            )
+                                                        }
+                                                        onKeyDown={(e) => {
+                                                            if (
+                                                                e.key ===
+                                                                'Enter'
+                                                            ) {
+                                                                confirmarAdicao();
+                                                            }
+                                                        }}
+                                                        inputMode="numeric"
+                                                        placeholder="dd/mm/aaaa"
+                                                        className="font-mono"
+                                                    />
+                                                </InputGroup>
+                                            </div>
+                                        )}
+
+                                        <Button onClick={confirmarAdicao}>
+                                            Confirmar
+                                        </Button>
                                         <Button
                                             variant="ghost"
                                             onClick={cancelarPendente}
@@ -520,31 +617,32 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                 </div>
                             )}
 
-                            {/* Confirmação do último produto escaneado — só
-                            informativo, já foi somado à lista automaticamente */}
-                            {!pendenteDeData && produtoEncontrado && (
+                            {/* Confirmação do último produto adicionado —
+                            só informativo, já está na lista */}
+                            {!produtoPendente && ultimoAdicionado && (
                                 <div className="flex animate-in items-center gap-3 rounded-lg border border-success/30 bg-success/10 p-3 duration-300 fade-in slide-in-from-top-2">
                                     <CheckCircle2 className="size-5 shrink-0 text-success" />
                                     <div className="min-w-0 flex-1">
                                         <h3 className="truncate text-sm font-semibold">
-                                            {produtoEncontrado.DESCRICAO}
+                                            {ultimoAdicionado.DESCRICAO}
                                         </h3>
                                         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                                             <span className="font-mono">
-                                                Cód: {produtoEncontrado.CODPROD}
+                                                Cód: {ultimoAdicionado.CODPROD}
                                             </span>
                                             <span>•</span>
                                             <span>
-                                                {produtoEncontrado.EMBALAGEM} /{' '}
-                                                {produtoEncontrado.UNIDADE}
+                                                Qtd:{' '}
+                                                {ultimoAdicionado.quantidade}{' '}
+                                                {ultimoAdicionado.UNIDADE}
                                             </span>
-                                            {produtoEncontrado.dataVencimento && (
+                                            {ultimoAdicionado.dataVencimento && (
                                                 <>
                                                     <span>•</span>
                                                     <span>
                                                         Vence em{' '}
                                                         {
-                                                            produtoEncontrado.dataVencimento
+                                                            ultimoAdicionado.dataVencimento
                                                         }
                                                     </span>
                                                 </>
@@ -553,8 +651,10 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     </div>
                                     <span className="shrink-0 font-mono text-lg font-bold text-success tabular-nums">
                                         R${' '}
-                                        {Number(
-                                            produtoEncontrado.PRECO || 0,
+                                        {(
+                                            Number(
+                                                ultimoAdicionado.PRECO || 0,
+                                            ) * ultimoAdicionado.quantidade
                                         ).toFixed(2)}
                                     </span>
                                 </div>
