@@ -143,7 +143,7 @@ class Pcempr extends Model implements AuthenticatableContract
                 'usuariobd' => trim($usuariobd ?? ''),
                 'email' => trim($email ?? ''),
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro na autenticação Oracle', [
                 'error' => $e->getMessage(),
                 'usuario' => $usuario,

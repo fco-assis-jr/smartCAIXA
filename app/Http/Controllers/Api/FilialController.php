@@ -48,7 +48,7 @@ class FilialController extends Controller
                 'success' => true,
                 'data' => $filiais,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar filiais', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -97,7 +97,7 @@ class FilialController extends Controller
                     'telefone' => $filial->telefone ?? '',
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar filial', [
                 'codigo' => $codigo,
                 'error' => $e->getMessage(),
@@ -165,7 +165,7 @@ class FilialController extends Controller
                 'success' => true,
                 'data' => $filiais,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar filiais com filtros', [
                 'filtros' => $request->all(),
                 'error' => $e->getMessage(),

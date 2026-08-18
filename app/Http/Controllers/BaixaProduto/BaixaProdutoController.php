@@ -140,7 +140,7 @@ class BaixaProdutoController extends Controller
                     'PRECO' => (float) ($produto->preco ?? 0),
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar produto: '.$e->getMessage());
 
             return response()->json([

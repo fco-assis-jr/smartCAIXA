@@ -53,7 +53,7 @@ class MenuAcessoController extends Controller
             MenuSetorAcesso::definirSetores((string) $request->input('menu'), $request->input('codsetores', []));
 
             return response()->json(['success' => true]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao salvar acesso de menu por setor', [
                 'menu' => $request->input('menu'),
                 'error' => $e->getMessage(),
@@ -72,16 +72,22 @@ class MenuAcessoController extends Controller
      */
     private function listarSetores()
     {
-        return Cache::remember('setores.index', now()->addMinutes(10), function () {
-            return DB::connection('oracle')
-                ->table('PCSETOR')
-                ->select('CODSETOR', 'DESCRICAO')
-                ->orderBy('CODSETOR')
-                ->get()
-                ->map(fn ($setor) => [
-                    'codsetor' => (int) $setor->codsetor,
-                    'descricao' => trim($setor->descricao ?? ''),
-                ]);
-        });
+        try {
+            return Cache::remember('setores.index', now()->addMinutes(10), function () {
+                return DB::connection('oracle')
+                    ->table('PCSETOR')
+                    ->select('CODSETOR', 'DESCRICAO')
+                    ->orderBy('CODSETOR')
+                    ->get()
+                    ->map(fn ($setor) => [
+                        'codsetor' => (int) $setor->codsetor,
+                        'descricao' => trim($setor->descricao ?? ''),
+                    ]);
+            });
+        } catch (\Throwable $e) {
+            \Log::error('Erro ao buscar setores', ['error' => $e->getMessage()]);
+
+            return collect();
+        }
     }
 }

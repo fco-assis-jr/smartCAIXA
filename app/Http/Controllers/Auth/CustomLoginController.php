@@ -109,7 +109,7 @@ class CustomLoginController extends Controller
 
             // Redirecionar para o dashboard
             return redirect()->intended('/smartcaixa/dashboard');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro no processo de login', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),

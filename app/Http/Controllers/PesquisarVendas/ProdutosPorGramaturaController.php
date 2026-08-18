@@ -94,7 +94,7 @@ class ProdutosPorGramaturaController extends Controller
                 'success' => true,
                 'vendas' => $vendasConvertidas,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar vendas por gramatura', [
                 'error' => $e->getMessage(),
                 'filial' => $request->filial,

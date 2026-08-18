@@ -4,7 +4,7 @@ import {
     ChevronsLeft,
     ChevronsRight,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -44,15 +44,20 @@ export function TablePagination({
     disabled = false,
 }: TablePaginationProps) {
     const totalPaginas = Math.max(1, Math.ceil(totalItens / itensPorPagina));
-    const inicio = totalItens === 0 ? 0 : (paginaAtual - 1) * itensPorPagina + 1;
+    const inicio =
+        totalItens === 0 ? 0 : (paginaAtual - 1) * itensPorPagina + 1;
     const fim = Math.min(paginaAtual * itensPorPagina, totalItens);
     const [irPara, setIrPara] = useState('');
 
     // Some junto com a página atual pra não deixar um valor velho no campo
     // depois de saltar pra outra página por outro controle (setas, etc.).
-    useEffect(() => {
+    // Ajustado durante a renderização (em vez de useEffect) seguindo o
+    // padrão do React pra resetar estado quando uma prop muda.
+    const [paginaAnterior, setPaginaAnterior] = useState(paginaAtual);
+    if (paginaAtual !== paginaAnterior) {
+        setPaginaAnterior(paginaAtual);
         setIrPara('');
-    }, [paginaAtual]);
+    }
 
     const irParaPagina = (pagina: number) => {
         const alvo = Math.min(Math.max(1, pagina), totalPaginas);

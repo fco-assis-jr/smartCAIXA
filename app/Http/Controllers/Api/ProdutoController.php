@@ -63,7 +63,7 @@ class ProdutoController extends Controller
                     'PRECO' => (float) ($produto->preco ?? 0),
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar produto', [
                 'codigo' => $validated['codigo'],
                 'codFilial' => $validated['codFilial'],
@@ -157,7 +157,7 @@ class ProdutoController extends Controller
                 }),
                 'count' => $produtos->count(),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar produtos', [
                 'filtros' => $validated,
                 'error' => $e->getMessage(),
@@ -222,7 +222,7 @@ class ProdutoController extends Controller
                     'PRECO' => (float) ($produto->preco ?? 0),
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar produto', [
                 'codProd' => $codProd,
                 'codFilial' => $validated['codFilial'],

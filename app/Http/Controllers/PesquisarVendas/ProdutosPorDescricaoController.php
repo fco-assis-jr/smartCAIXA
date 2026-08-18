@@ -97,7 +97,7 @@ class ProdutosPorDescricaoController extends Controller
                 'success' => true,
                 'produtos' => $produtosConvertidos,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar produtos para autocomplete', [
                 'error' => $e->getMessage(),
             ]);
@@ -194,7 +194,7 @@ class ProdutosPorDescricaoController extends Controller
                 'success' => true,
                 'vendas' => $vendasConvertidas,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao buscar vendas por produto', [
                 'error' => $e->getMessage(),
             ]);

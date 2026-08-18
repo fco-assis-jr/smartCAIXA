@@ -84,7 +84,7 @@ class DblinkController extends Controller
 
         try {
             DB::connection($conexao)->select('SELECT 1 FROM DUAL');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::warning('Caixa online na rede, mas a Oracle dele não respondeu', [
                 'ip' => $ip,
                 'error' => $e->getMessage(),
@@ -101,7 +101,7 @@ class DblinkController extends Controller
         try {
             DB::connection($conexao)->statement('DROP DATABASE LINK DBLSERVIDOR');
             \Log::info('DBLink DBLSERVIDOR dropado com sucesso', ['ip' => $ip]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Se não existir, não tem problema
             \Log::info('DBLink DBLSERVIDOR não existia', ['ip' => $ip, 'error' => $e->getMessage()]);
         }
@@ -135,7 +135,7 @@ class DblinkController extends Controller
                 'servidores' => ['172.22.0.176', '172.22.0.177'],
                 'caixa' => $ip,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao criar DBLink na Oracle do caixa', [
                 'ip' => $ip,
                 'error' => $e->getMessage(),
@@ -163,7 +163,7 @@ class DblinkController extends Controller
                     'numeroCaixa' => $validated['numeroCaixa'],
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::warning('DBLink criado, mas teste de conexão com os servidores centrais falhou', [
                 'error' => $e->getMessage(),
             ]);
@@ -225,7 +225,7 @@ class DblinkController extends Controller
             try {
                 DB::connection($conexao)->select('SELECT 1 FROM DUAL@DBLSERVIDOR');
                 $connectionOk = true;
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Log::info('Teste de conexão DBLink falhou', ['error' => $e->getMessage()]);
             }
 
@@ -234,7 +234,7 @@ class DblinkController extends Controller
                 'exists' => true,
                 'connectionOk' => $connectionOk,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::info('Não foi possível conectar à Oracle do caixa para verificar o status', [
                 'ip' => $caixa['endereco'],
                 'error' => $e->getMessage(),
@@ -284,7 +284,7 @@ class DblinkController extends Controller
                     ];
                 }, $rows);
             });
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Erro ao listar caixas', ['error' => $e->getMessage()]);
 
             return [];
