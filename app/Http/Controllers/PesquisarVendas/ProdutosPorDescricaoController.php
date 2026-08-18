@@ -77,7 +77,7 @@ class ProdutosPorDescricaoController extends Controller
                           AND E.CODFILIAL = :filial
                           {$whereClause}
                     GROUP BY E.CODAUXILIAR, P.CODPROD, P.DESCRICAO, E.EMBALAGEM
-                    ORDER BY P.DESCRICAO
+                    ORDER BY E.CODAUXILIAR, P.CODPROD, P.DESCRICAO
                     FETCH FIRST 50 ROWS ONLY
                 ", $bindParams);
 
