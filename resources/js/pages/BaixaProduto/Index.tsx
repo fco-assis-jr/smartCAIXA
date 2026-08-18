@@ -1,6 +1,12 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { PackageMinus, Receipt, ScanBarcode, Trash2 } from 'lucide-react';
+import {
+    CheckCircle2,
+    PackageMinus,
+    Receipt,
+    ScanBarcode,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
 import { FilialCombobox } from '@/components/filial-combobox';
@@ -53,7 +59,6 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     );
     const [buscandoProduto, setBuscandoProduto] = useState(false);
     const [codAuxiliar, setCodAuxiliar] = useState('');
-    const [quantidade, setQuantidade] = useState(1);
     const [alert, setAlert] = useState<AlertState>({
         open: false,
         message: '',
@@ -65,9 +70,8 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         setAlert({ open: false, message: '', variant: 'default' });
     }, []);
 
-    // Refs para controlar foco
+    // Ref pra manter o foco no campo de código entre um escaneio e outro
     const codAuxiliarInputRef = useRef<HTMLInputElement>(null);
-    const quantidadeInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData } = useForm({
         codFilial: '',
@@ -108,17 +112,36 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         }, 0);
     }, [produtos]);
 
-    // Focar no input de quantidade quando produto for encontrado
-    useEffect(() => {
-        if (produtoEncontrado) {
-            setTimeout(() => {
-                quantidadeInputRef.current?.focus();
-                quantidadeInputRef.current?.select();
-            }, 100);
-        }
-    }, [produtoEncontrado]);
+    // Escanear o mesmo produto de novo soma na linha existente, em vez de
+    // duplicar — é assim que o operador espera ver a coleta agrupada
+    // quando passa o mesmo código várias vezes.
+    const adicionarOuSomarProduto = (produto: Produto) => {
+        setProdutos((atual) => {
+            const jaExiste = atual.some(
+                (p) => p.CODAUXILIAR === produto.CODAUXILIAR,
+            );
+
+            if (jaExiste) {
+                return atual.map((p) =>
+                    p.CODAUXILIAR === produto.CODAUXILIAR
+                        ? {
+                              ...p,
+                              quantidade: p.quantidade + produto.quantidade,
+                          }
+                        : p,
+                );
+            }
+
+            return [...atual, produto];
+        });
+    };
 
     const buscarProduto = async () => {
+        // Evita duas buscas em paralelo pro mesmo escaneio (ex.: Enter e o
+        // blur causado pelo campo desabilitando durante a busca) — sem
+        // isso, cada bipada podia entrar na lista em dobro.
+        if (buscandoProduto) return;
+
         if (!codAuxiliar.trim() || !data.codFilial) {
             if (!data.codFilial) {
                 showAlert(
@@ -140,11 +163,16 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             );
 
             if (response.data.produto) {
-                setProdutoEncontrado({
-                    ...response.data.produto,
-                    quantidade: 1,
-                });
-                setQuantidade(1);
+                const produto = { ...response.data.produto, quantidade: 1 };
+                adicionarOuSomarProduto(produto);
+                setProdutoEncontrado(produto);
+                setCodAuxiliar('');
+
+                // Foco de volta no código pra próxima bipada, sem precisar
+                // de nenhum clique no meio do caminho.
+                setTimeout(() => {
+                    codAuxiliarInputRef.current?.focus();
+                }, 100);
             }
         } catch (error) {
             console.error('Erro ao buscar produto:', error);
@@ -161,44 +189,6 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         } finally {
             setBuscandoProduto(false);
         }
-    };
-
-    const adicionarProduto = () => {
-        if (!produtoEncontrado || quantidade <= 0) return;
-
-        // Escanear o mesmo produto de novo soma na linha existente, em vez
-        // de duplicar — é assim que o operador espera ver a coleta agrupada
-        // quando passa o mesmo código várias vezes.
-        const jaExiste = produtos.some(
-            (produto) => produto.CODAUXILIAR === produtoEncontrado.CODAUXILIAR,
-        );
-
-        if (jaExiste) {
-            setProdutos((atual) =>
-                atual.map((produto) =>
-                    produto.CODAUXILIAR === produtoEncontrado.CODAUXILIAR
-                        ? {
-                              ...produto,
-                              quantidade: produto.quantidade + quantidade,
-                          }
-                        : produto,
-                ),
-            );
-        } else {
-            setProdutos((atual) => [
-                ...atual,
-                { ...produtoEncontrado, quantidade },
-            ]);
-        }
-
-        setProdutoEncontrado(null);
-        setCodAuxiliar('');
-        setQuantidade(1);
-
-        // Focar no input de código para o próximo item
-        setTimeout(() => {
-            codAuxiliarInputRef.current?.focus();
-        }, 100);
     };
 
     const removerProduto = (index: number) => {
@@ -346,7 +336,6 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                                 buscarProduto();
                                             }
                                         }}
-                                        onBlur={buscarProduto}
                                         placeholder={
                                             contextoDefinido
                                                 ? 'Escaneie ou digite o código...'
@@ -361,9 +350,11 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                 </InputGroup>
                             </div>
 
-                            {/* Preview do Produto Encontrado */}
+                            {/* Confirmação do último produto escaneado — só
+                            informativo, já foi somado à lista automaticamente */}
                             {produtoEncontrado && (
-                                <div className="flex animate-in flex-col gap-3 rounded-lg border border-info/30 bg-info/10 p-3 duration-300 fade-in slide-in-from-top-2 sm:flex-row sm:items-center">
+                                <div className="flex animate-in items-center gap-3 rounded-lg border border-success/30 bg-success/10 p-3 duration-300 fade-in slide-in-from-top-2">
+                                    <CheckCircle2 className="size-5 shrink-0 text-success" />
                                     <div className="min-w-0 flex-1">
                                         <h3 className="truncate text-sm font-semibold">
                                             {produtoEncontrado.DESCRICAO}
@@ -379,40 +370,12 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="shrink-0 font-mono text-lg font-bold text-info tabular-nums">
-                                            R${' '}
-                                            {Number(
-                                                produtoEncontrado.PRECO || 0,
-                                            ).toFixed(2)}
-                                        </span>
-                                        <Input
-                                            ref={quantidadeInputRef}
-                                            id="quantidade"
-                                            type="number"
-                                            value={quantidade}
-                                            onChange={(e) =>
-                                                setQuantidade(
-                                                    Number(e.target.value),
-                                                )
-                                            }
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    adicionarProduto();
-                                                }
-                                            }}
-                                            min="1"
-                                            placeholder="Qtd"
-                                            className="h-9 w-20 shrink-0 font-mono"
-                                        />
-                                        <Button
-                                            onClick={adicionarProduto}
-                                            disabled={quantidade <= 0}
-                                            className="shrink-0"
-                                        >
-                                            Adicionar
-                                        </Button>
-                                    </div>
+                                    <span className="shrink-0 font-mono text-lg font-bold text-success tabular-nums">
+                                        R${' '}
+                                        {Number(
+                                            produtoEncontrado.PRECO || 0,
+                                        ).toFixed(2)}
+                                    </span>
                                 </div>
                             )}
 
