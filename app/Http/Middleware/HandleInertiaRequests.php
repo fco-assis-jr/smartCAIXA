@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\MenuSetorAcesso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
@@ -48,10 +49,11 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Quais menus restritos por setor (config/menu_access.php) o usuário
-     * autenticado pode ver — usado pra esconder itens da barra lateral.
-     * A aplicação real da restrição é feita pelo middleware 'setor' nas
-     * rotas; isto é só pra não mostrar um link que vai dar 403.
+     * Quais menus restritos por setor (config/menus.php, com os setores
+     * permitidos configurados no MySQL) o usuário autenticado pode ver —
+     * usado pra esconder itens da barra lateral. A aplicação real da
+     * restrição é feita pelos middlewares 'setor'/'setor.ti' nas rotas;
+     * isto é só pra não mostrar um link que vai dar 403.
      *
      * @return array<string, bool>
      */
@@ -67,9 +69,16 @@ class HandleInertiaRequests extends Middleware
         $usuario = Auth::user();
         $codSetor = (int) ($usuario->CODSETOR ?? $usuario->codsetor ?? 0);
 
-        return array_map(
-            fn (array $setoresPermitidos) => in_array($codSetor, $setoresPermitidos, true),
-            config('menu_access', []),
-        );
+        $acessos = [];
+        foreach (array_keys(config('menus', [])) as $menu) {
+            $acessos[$menu] = MenuSetorAcesso::temAcesso($menu, $codSetor);
+        }
+
+        // "administrador" não vem de config/menus.php de propósito — o
+        // acesso a ele é fixo no código (ver EnsureIsTi), não editável
+        // pela própria tela que ele controla.
+        $acessos['administrador'] = $codSetor === 16;
+
+        return $acessos;
     }
 }

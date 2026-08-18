@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureIsTi;
 use App\Http\Middleware\EnsureSetorAcesso;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'session.security' => ValidateSessionSecurity::class,
             'setor' => EnsureSetorAcesso::class,
+            'setor.ti' => EnsureIsTi::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -1,5 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, PackageMinus, Search, Wrench } from 'lucide-react';
+import {
+    LayoutGrid,
+    PackageMinus,
+    Search,
+    ShieldCheck,
+    Wrench,
+} from 'lucide-react';
 import { useMemo } from 'react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -13,6 +19,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import administrador from '@/routes/administrador';
 import baixaProduto from '@/routes/baixa-produto';
 import ferramentas from '@/routes/ferramentas';
 import pesquisarVendas from '@/routes/pesquisar-vendas';
@@ -63,14 +70,20 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
+    {
+        title: 'Administrador',
+        href: administrador.menuAcesso.index(),
+        icon: ShieldCheck,
+        menuKey: 'administrador',
+    },
 ];
 
 export function AppSidebar() {
     const { menuAccess } = usePage<SharedData>().props;
 
     // Um item sem menuKey é liberado pra todos (ex.: Dashboard, Baixa
-    // Produto); com menuKey, some da barra se o setor do usuário não
-    // estiver na lista de config/menu_access.php.
+    // Produto); com menuKey, some da barra se o setor do usuário não tiver
+    // acesso configurado (ver menuAccess em HandleInertiaRequests).
     const visibleNavItems = useMemo(
         () =>
             mainNavItems.filter(

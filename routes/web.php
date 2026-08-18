@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administrador\MenuAcessoController;
 use App\Http\Controllers\Api\FilialController;
 use App\Http\Controllers\Api\ProdutoController;
 use App\Http\Controllers\Auth\CustomLoginController;
@@ -85,6 +86,12 @@ Route::middleware(['auth'])->prefix('smartcaixa')->group(function () {
 
         // Buscar Itens de Uma Nota
         Route::get('buscar-itens-nota', [BuscarItensNotaController::class, 'index'])->name('buscar-itens-nota.index');
+    });
+
+    // Administrador — restrito ao setor 16 (TI), fixo (ver EnsureIsTi)
+    Route::middleware('setor.ti')->prefix('administrador')->name('administrador.')->group(function () {
+        Route::get('menu-acesso', [MenuAcessoController::class, 'index'])->name('menu-acesso.index');
+        Route::post('menu-acesso', [MenuAcessoController::class, 'atualizar'])->name('menu-acesso.atualizar');
     });
 
 });
