@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\MenuSetorAcesso;
 use App\Models\Pcempr;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class MenuAcessoTest extends TestCase
@@ -76,6 +77,31 @@ class MenuAcessoTest extends TestCase
         $this->actingAs($this->usuarioComSetor(21))
             ->get('/smartcaixa/administrador/menu-acesso')
             ->assertForbidden();
+    }
+
+    public function test_dashboard_recebe_menuaccess_refletindo_o_setor_do_usuario(): void
+    {
+        MenuSetorAcesso::definirSetores('consultar-vendas', [21, 26]);
+        MenuSetorAcesso::definirSetores('ferramentas', [16]);
+
+        // Setor 21: tem acesso a "consultar-vendas", mas não a "ferramentas"
+        // — o dashboard usa isso pra decidir quais seções mostrar.
+        $this->actingAs($this->usuarioComSetor(21))
+            ->get('/smartcaixa/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('menuAccess.consultar-vendas', true)
+                ->where('menuAccess.ferramentas', false)
+            );
+
+        // Setor 29: sem acesso a nenhum dos dois menus restritos.
+        $this->actingAs($this->usuarioComSetor(29))
+            ->get('/smartcaixa/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('menuAccess.consultar-vendas', false)
+                ->where('menuAccess.ferramentas', false)
+            );
     }
 
     public function test_atualizar_substitui_a_lista_de_setores_do_menu(): void

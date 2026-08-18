@@ -33,6 +33,13 @@ type Tool = {
 type Section = {
     label: string;
     tools: Tool[];
+    /**
+     * Chave em config/menus.php — a seção inteira some do dashboard se o
+     * setor do usuário não tiver acesso (ver menuAccess em
+     * HandleInertiaRequests, mesmo mecanismo do app-sidebar.tsx). Sem
+     * chave, a seção é liberada pra todos (ex.: Baixa Produto).
+     */
+    menuKey?: string;
 };
 
 const sections: Section[] = [
@@ -50,6 +57,7 @@ const sections: Section[] = [
     },
     {
         label: 'Consultar vendas',
+        menuKey: 'consultar-vendas',
         tools: [
             {
                 title: 'Vendas por Produto',
@@ -75,6 +83,7 @@ const sections: Section[] = [
     },
     {
         label: 'Ferramentas',
+        menuKey: 'ferramentas',
         tools: [
             {
                 title: 'DBLink',
@@ -104,9 +113,15 @@ function useClock() {
 }
 
 export default function Dashboard() {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, menuAccess } = usePage<SharedData>().props;
     const now = useClock();
     const firstName = auth.user.name?.split(' ')[0] || auth.user.name;
+
+    // Mesma regra do menu lateral: seção sem menuKey é liberada pra
+    // todos; com menuKey, só aparece se o setor do usuário tiver acesso.
+    const visibleSections = sections.filter(
+        (section) => !section.menuKey || menuAccess[section.menuKey],
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -133,7 +148,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {sections.map((section) => (
+                {visibleSections.map((section) => (
                     <section key={section.label} className="space-y-3">
                         <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                             {section.label}
