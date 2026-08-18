@@ -1,8 +1,8 @@
-import buscarItensNota from './buscar-itens-nota'
-import buscarProdutoDevolucao from './buscar-produto-devolucao'
-import notaBranca from './nota-branca'
-import produtosPorDescricao from './produtos-por-descricao'
 import produtosPorGramatura from './produtos-por-gramatura'
+import produtosPorDescricao from './produtos-por-descricao'
+import buscarProdutoDevolucao from './buscar-produto-devolucao'
+import buscarItensNota from './buscar-itens-nota'
+import notaBranca from './nota-branca'
 const pesquisarVendas = {
     produtosPorGramatura: Object.assign(produtosPorGramatura, produtosPorGramatura),
 produtosPorDescricao: Object.assign(produtosPorDescricao, produtosPorDescricao),

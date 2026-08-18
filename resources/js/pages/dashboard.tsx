@@ -83,7 +83,7 @@ const sections: Section[] = [
             {
                 title: 'Nota Branca (NFC)',
                 description:
-                    'Gere um DANFE simplificado a partir do XML de uma nota fiscal.',
+                    'Gere o DANFE em PDF a partir do XML de uma nota fiscal.',
                 href: pesquisarVendas.notaBranca.index().url,
                 icon: FileText,
             },

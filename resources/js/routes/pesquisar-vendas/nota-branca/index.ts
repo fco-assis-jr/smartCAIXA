@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::index
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:17
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:18
  * @route '/smartcaixa/pesquisar-vendas/nota-branca'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::buscar
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:41
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:42
  * @route '/smartcaixa/pesquisar-vendas/nota-branca/buscar'
  */
 export const buscar = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ buscar.definition = {
 
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::buscar
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:41
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:42
  * @route '/smartcaixa/pesquisar-vendas/nota-branca/buscar'
  */
 buscar.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ buscar.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::buscar
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:41
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:42
  * @route '/smartcaixa/pesquisar-vendas/nota-branca/buscar'
  */
 buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::buscar
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:41
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:42
  * @route '/smartcaixa/pesquisar-vendas/nota-branca/buscar'
  */
     const buscarForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::buscar
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:41
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:42
  * @route '/smartcaixa/pesquisar-vendas/nota-branca/buscar'
  */
         buscarForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -133,26 +133,26 @@ buscar.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     
     buscar.form = buscarForm
 /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-export const xml = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: xml.url(args, options),
+export const danfe = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: danfe.url(args, options),
     method: 'get',
 })
 
-xml.definition = {
+danfe.definition = {
     methods: ["get","head"],
-    url: '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml',
+    url: '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe',
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-xml.url = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions) => {
+danfe.url = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { numTransVenda: args }
     }
@@ -170,56 +170,56 @@ xml.url = (args: { numTransVenda: string | number } | [numTransVenda: string | n
                         numTransVenda: args.numTransVenda,
                 }
 
-    return xml.definition.url
+    return danfe.definition.url
             .replace('{numTransVenda}', parsedArgs.numTransVenda.toString())
             .replace(/\/+$/, '') + queryParams(options)
 }
 
 /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-xml.get = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: xml.url(args, options),
+danfe.get = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: danfe.url(args, options),
     method: 'get',
 })
 /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-xml.head = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
-    url: xml.url(args, options),
+danfe.head = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: danfe.url(args, options),
     method: 'head',
 })
 
     /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-    const xmlForm = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-        action: xml.url(args, options),
+    const danfeForm = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: danfe.url(args, options),
         method: 'get',
     })
 
             /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-        xmlForm.get = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-            action: xml.url(args, options),
+        danfeForm.get = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: danfe.url(args, options),
             method: 'get',
         })
             /**
-* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::xml
- * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:201
- * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/xml'
+* @see \App\Http\Controllers\PesquisarVendas\NotaBrancaController::danfe
+ * @see app/Http/Controllers/PesquisarVendas/NotaBrancaController.php:200
+ * @route '/smartcaixa/pesquisar-vendas/nota-branca/{numTransVenda}/danfe'
  */
-        xmlForm.head = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-            action: xml.url(args, {
+        danfeForm.head = (args: { numTransVenda: string | number } | [numTransVenda: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: danfe.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',
                             ...(options?.query ?? options?.mergeQuery ?? {}),
@@ -228,11 +228,11 @@ xml.head = (args: { numTransVenda: string | number } | [numTransVenda: string | 
             method: 'get',
         })
     
-    xml.form = xmlForm
+    danfe.form = danfeForm
 const notaBranca = {
     index: Object.assign(index, index),
 buscar: Object.assign(buscar, buscar),
-xml: Object.assign(xml, xml),
+danfe: Object.assign(danfe, danfe),
 }
 
 export default notaBranca

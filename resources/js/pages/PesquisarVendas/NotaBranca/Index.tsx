@@ -2,12 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import {
-    Calendar as CalendarIcon,
-    FileText,
-    Loader2,
-    Search,
-} from 'lucide-react';
+import { Calendar as CalendarIcon, FileText, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
 import { FilialCombobox } from '@/components/filial-combobox';
@@ -39,7 +34,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
-import { gerarPDFNotaBranca } from '@/lib/gerar-pdf-nota-branca';
 import { dashboard } from '@/routes';
 import pesquisarVendas from '@/routes/pesquisar-vendas';
 
@@ -88,7 +82,6 @@ export default function NotaBranca({ filiais }: Props) {
     const [paginaAtual, setPaginaAtual] = useState(1);
     const [itensPorPagina, setItensPorPagina] = useState(25);
     const [buscando, setBuscando] = useState(false);
-    const [gerandoPdfPara, setGerandoPdfPara] = useState<string | null>(null);
     const [dataInicial, setDataInicial] = useState<Date>(new Date());
     const [dataFinal, setDataFinal] = useState<Date>(new Date());
     const [alert, setAlert] = useState<AlertState>({
@@ -177,41 +170,6 @@ export default function NotaBranca({ filiais }: Props) {
         setPaginaAtual(1);
     };
 
-    const gerarPdf = async (nota: NotaBranca) => {
-        setGerandoPdfPara(nota.NUMTRANSVENDA);
-        try {
-            const response = await axios.get(
-                pesquisarVendas.notaBranca.xml.url({
-                    numTransVenda: nota.NUMTRANSVENDA,
-                }),
-            );
-
-            if (!response.data.success) {
-                showAlert(
-                    response.data.message ??
-                        'Não foi possível obter o XML da nota.',
-                    'error',
-                );
-                return;
-            }
-
-            await gerarPDFNotaBranca({
-                xml: response.data.xml,
-                numNota: nota.NUMNOTA,
-                chaveNFe: nota.CHAVENFE,
-                cliente: nota.CLIENTE,
-                cpfCnpj: nota.CPF_CNPJ,
-                valorTotal: nota.VLTOTAL,
-                dataSaida: formatarData(nota.DTSAIDA),
-            });
-        } catch (error) {
-            console.error('Erro ao gerar PDF da nota:', error);
-            showAlert('Erro ao gerar o PDF da nota. Tente novamente.', 'error');
-        } finally {
-            setGerandoPdfPara(null);
-        }
-    };
-
     const notasPaginadas = useMemo(() => {
         const inicio = (paginaAtual - 1) * itensPorPagina;
         return notas.slice(inicio, inicio + itensPorPagina);
@@ -236,7 +194,7 @@ export default function NotaBranca({ filiais }: Props) {
             <div className="px-4 py-6">
                 <Heading
                     title="Nota Branca (NFC)"
-                    description="Busque notas fiscais modelo 55 por filial e período, e gere um DANFE simplificado a partir do XML."
+                    description="Busque notas fiscais modelo 55 por filial e período, e gere o DANFE em PDF a partir do XML."
                 />
 
                 <div className="mt-6 space-y-4">
@@ -439,28 +397,23 @@ export default function NotaBranca({ filiais }: Props) {
                                                     </TableCell>
                                                     <TableCell className="text-center">
                                                         <Button
+                                                            asChild
                                                             size="sm"
                                                             variant="outline"
-                                                            disabled={
-                                                                gerandoPdfPara !==
-                                                                null
-                                                            }
-                                                            onClick={() =>
-                                                                gerarPdf(nota)
-                                                            }
                                                         >
-                                                            {gerandoPdfPara ===
-                                                            nota.NUMTRANSVENDA ? (
-                                                                <>
-                                                                    <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                                                    Gerando...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <FileText className="mr-1 size-3.5" />
-                                                                    Gerar PDF
-                                                                </>
-                                                            )}
+                                                            <a
+                                                                href={pesquisarVendas.notaBranca.danfe.url(
+                                                                    {
+                                                                        numTransVenda:
+                                                                            nota.NUMTRANSVENDA,
+                                                                    },
+                                                                )}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                            >
+                                                                <FileText className="mr-1 size-3.5" />
+                                                                Gerar PDF
+                                                            </a>
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>

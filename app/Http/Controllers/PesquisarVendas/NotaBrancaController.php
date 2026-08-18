@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use NFePHP\DA\NFe\Danfe;
 
 class NotaBrancaController extends Controller
 {
@@ -192,62 +193,78 @@ class NotaBrancaController extends Controller
     }
 
     /**
-     * Buscar o XML (CLOB) de uma nota específica, pra gerar o PDF no
-     * frontend. Não faz nenhum parsing aqui — só devolve o XML crú; ver
-     * resources/js/lib/gerar-pdf-nota-branca.ts pro parsing e montagem do
-     * PDF (mantém a geração 100% client-side, mesmo padrão do resto do
-     * projeto — ver gerar-pdf-baixa.ts).
+     * Gerar o DANFE oficial (nfephp-org/sped-da) em PDF a partir do XML da
+     * nota. O PDF é montado inteiramente aqui no backend e devolvido inline
+     * — o botão "Gerar PDF" do frontend só abre esta URL numa aba nova.
      */
-    public function xml(string $numTransVenda)
+    public function danfe(string $numTransVenda)
     {
         try {
-            $registro = DB::connection('oracle')->selectOne(
-                'SELECT XMLNFE FROM PCDOCELETRONICO WHERE NUMTRANSACAO = :numTransVenda',
-                ['numTransVenda' => $numTransVenda]
-            );
-
-            if (! $registro || empty($registro->xmlnfe)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'XML da nota não encontrado.',
-                ], 404);
-            }
-
-            $xml = $registro->xmlnfe;
-            // Oracle CLOB pode voltar como string simples ou como objeto
-            // lob-like (com método load()) dependendo do driver — cobre os
-            // dois casos (confirmado empiricamente via tinker que hoje volta
-            // como string simples, mas mantém a defesa pro caso mudar).
-            if (is_object($xml) && method_exists($xml, 'load')) {
-                $xml = $xml->load();
-            }
-
-            if (! is_string($xml) || trim($xml) === '') {
-                \Log::warning('CLOB XMLNFE em formato inesperado', [
-                    'numTransVenda' => $numTransVenda,
-                    'tipo' => is_object($xml) ? get_class($xml) : gettype($xml),
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Não foi possível ler o XML desta nota.',
-                ], 500);
-            }
-
-            return response()->json([
-                'success' => true,
-                'xml' => $xml,
-            ]);
+            $xml = $this->buscarXml($numTransVenda);
         } catch (\Throwable $e) {
-            \Log::error('Erro ao buscar XML da nota', [
+            \Log::error('Erro ao buscar XML pra gerar DANFE', [
                 'numTransVenda' => $numTransVenda,
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Não foi possível buscar o XML da nota. Tente novamente.',
-            ], 500);
+            return response('Não foi possível buscar o XML da nota. Tente novamente.', 500);
         }
+
+        if (! $xml) {
+            return response('XML da nota não encontrado.', 404);
+        }
+
+        try {
+            $pdf = (new Danfe($xml))->render();
+        } catch (\Throwable $e) {
+            \Log::error('Erro ao gerar DANFE', [
+                'numTransVenda' => $numTransVenda,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response('Não foi possível gerar o DANFE desta nota. O XML pode estar incompleto.', 500);
+        }
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="danfe-'.$numTransVenda.'.pdf"',
+        ]);
+    }
+
+    /**
+     * Busca o XML (CLOB) de uma nota específica em PCDOCELETRONICO.
+     *
+     * @return string|null Null se a nota não tiver XML associado.
+     */
+    private function buscarXml(string $numTransVenda): ?string
+    {
+        $registro = DB::connection('oracle')->selectOne(
+            'SELECT XMLNFE FROM PCDOCELETRONICO WHERE NUMTRANSACAO = :numTransVenda',
+            ['numTransVenda' => $numTransVenda]
+        );
+
+        if (! $registro || empty($registro->xmlnfe)) {
+            return null;
+        }
+
+        $xml = $registro->xmlnfe;
+        // Oracle CLOB pode voltar como string simples ou como objeto
+        // lob-like (com método load()) dependendo do driver — cobre os dois
+        // casos (confirmado empiricamente via tinker que hoje volta como
+        // string simples, mas mantém a defesa pro caso mudar).
+        if (is_object($xml) && method_exists($xml, 'load')) {
+            $xml = $xml->load();
+        }
+
+        if (! is_string($xml) || trim($xml) === '') {
+            \Log::warning('CLOB XMLNFE em formato inesperado', [
+                'numTransVenda' => $numTransVenda,
+                'tipo' => is_object($xml) ? get_class($xml) : gettype($xml),
+            ]);
+
+            return null;
+        }
+
+        return $xml;
     }
 }

@@ -93,9 +93,9 @@ Route::middleware(['auth'])->prefix('smartcaixa')->group(function () {
         // partir do XML armazenado em PCDOCELETRONICO.XMLNFE.
         Route::get('nota-branca', [NotaBrancaController::class, 'index'])->name('nota-branca.index');
         Route::post('nota-branca/buscar', [NotaBrancaController::class, 'buscar'])->name('nota-branca.buscar');
-        Route::get('nota-branca/{numTransVenda}/xml', [NotaBrancaController::class, 'xml'])
+        Route::get('nota-branca/{numTransVenda}/danfe', [NotaBrancaController::class, 'danfe'])
             ->where('numTransVenda', '[0-9]+')
-            ->name('nota-branca.xml');
+            ->name('nota-branca.danfe');
     });
 
     // Administrador — restrito ao setor 16 (TI), fixo (ver EnsureIsTi)
