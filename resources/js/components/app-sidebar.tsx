@@ -57,6 +57,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Itens da Nota Fiscal',
                 href: pesquisarVendas.buscarItensNota.index(),
             },
+            {
+                title: 'Nota Branca (NFC)',
+                href: pesquisarVendas.notaBranca.index(),
+            },
         ],
     },
     {

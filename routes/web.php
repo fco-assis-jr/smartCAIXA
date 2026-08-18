@@ -8,6 +8,7 @@ use App\Http\Controllers\BaixaProduto\BaixaProdutoController;
 use App\Http\Controllers\Ferramentas\DblinkController;
 use App\Http\Controllers\PesquisarVendas\BuscarItensNotaController;
 use App\Http\Controllers\PesquisarVendas\BuscarProdutoDevolucaoController;
+use App\Http\Controllers\PesquisarVendas\NotaBrancaController;
 use App\Http\Controllers\PesquisarVendas\ProdutosPorDescricaoController;
 use App\Http\Controllers\PesquisarVendas\ProdutosPorGramaturaController;
 use Illuminate\Support\Facades\Route;
@@ -86,6 +87,15 @@ Route::middleware(['auth'])->prefix('smartcaixa')->group(function () {
 
         // Buscar Itens de Uma Nota
         Route::get('buscar-itens-nota', [BuscarItensNotaController::class, 'index'])->name('buscar-itens-nota.index');
+
+        // Nota Branca (NFC) — busca de notas modelo 55 por filial/período e
+        // geração de um DANFE simplificado (sem QR code/código de barras) a
+        // partir do XML armazenado em PCDOCELETRONICO.XMLNFE.
+        Route::get('nota-branca', [NotaBrancaController::class, 'index'])->name('nota-branca.index');
+        Route::post('nota-branca/buscar', [NotaBrancaController::class, 'buscar'])->name('nota-branca.buscar');
+        Route::get('nota-branca/{numTransVenda}/xml', [NotaBrancaController::class, 'xml'])
+            ->where('numTransVenda', '[0-9]+')
+            ->name('nota-branca.xml');
     });
 
     // Administrador — restrito ao setor 16 (TI), fixo (ver EnsureIsTi)

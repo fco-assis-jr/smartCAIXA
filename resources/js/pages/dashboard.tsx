@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     FileSearch,
+    FileText,
     PackageMinus,
     Receipt,
     RotateCcw,
@@ -78,6 +79,13 @@ const sections: Section[] = [
                 description: 'Veja todos os itens vendidos em uma nota fiscal.',
                 href: pesquisarVendas.buscarItensNota.index().url,
                 icon: Receipt,
+            },
+            {
+                title: 'Nota Branca (NFC)',
+                description:
+                    'Gere um DANFE simplificado a partir do XML de uma nota fiscal.',
+                href: pesquisarVendas.notaBranca.index().url,
+                icon: FileText,
             },
         ],
     },
