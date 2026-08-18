@@ -45,7 +45,7 @@ class CustomLoginController extends Controller
             $senha = $request->senha;
 
             // Validar caracteres permitidos no usuário (prevenir SQL injection)
-            if (!preg_match('/^[a-zA-Z0-9._-]+$/', $usuario)) {
+            if (! preg_match('/^[a-zA-Z0-9._-]+$/', $usuario)) {
                 return back()->withErrors([
                     'usuario' => 'Usuário contém caracteres inválidos.',
                 ])->onlyInput('usuario');
@@ -54,7 +54,7 @@ class CustomLoginController extends Controller
             // Autenticar usando a query do Oracle
             $userData = Pcempr::autenticar($usuario, $senha);
 
-            if (!$userData) {
+            if (! $userData) {
                 // Log de tentativa falha (sem dados sensíveis)
                 \Log::warning('Tentativa de login falhou', [
                     'ip' => $request->ip(),
@@ -67,20 +67,8 @@ class CustomLoginController extends Controller
                 ])->onlyInput('usuario');
             }
 
-            // Verificar se tem permissão
-            if (!$userData['permissao']) {
-                \Log::warning('Usuário sem permissão tentou acessar', [
-                    'matricula' => $userData['matricula'],
-                    'ip' => $request->ip(),
-                ]);
-
-                return back()->withErrors([
-                    'usuario' => 'Você não tem permissão para acessar o sistema.',
-                ])->onlyInput('usuario');
-            }
-
             // Criar usuário para autenticação (dados já sanitizados pelo Model)
-            $user = new Pcempr();
+            $user = new Pcempr;
             $user->MATRICULA = $userData['matricula'];
             $user->NOME = $userData['nome'];
             $user->USUARIOBD = $userData['usuariobd'];
@@ -107,7 +95,6 @@ class CustomLoginController extends Controller
                 'nome' => $userData['nome'],
                 'usuariobd' => $userData['usuariobd'],
                 'email' => $userData['email'],
-                'permissao' => $userData['permissao'],
             ];
 
             // Armazenar dados na sessão

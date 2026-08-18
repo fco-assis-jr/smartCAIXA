@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
 
 class Pcempr extends Model implements AuthenticatableContract
@@ -11,9 +11,13 @@ class Pcempr extends Model implements AuthenticatableContract
     use Authenticatable;
 
     protected $connection = 'oracle';
+
     protected $table = 'PCEMPR';
+
     protected $primaryKey = 'MATRICULA';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -91,24 +95,26 @@ class Pcempr extends Model implements AuthenticatableContract
     }
 
     /**
-     * Buscar usuário e verificar permissão com a query fornecida
+     * Buscar usuário e validar usuário/senha com a query fornecida.
+     *
+     * Não checa mais permissão de rotina no PCCONTRO — login só depende de
+     * usuário e senha corretos no WinThor. Quem pode ver o quê depois de
+     * logado é controlado por setor (ver App\Models\MenuSetorAcesso).
      */
     public static function autenticar($usuario, $senha)
     {
         try {
-            $result = \DB::connection('oracle')->select("
+            $result = \DB::connection('oracle')->select('
                 SELECT
                     P.MATRICULA,
                     P.NOME,
                     P.USUARIOBD,
-                    NVL(P.EMAIL, P.NOME_GUERRA) AS EMAIL,
-                    DECODE(C.ACESSO, 'S', 'S', 'N') AS PERMISSAO
+                    NVL(P.EMAIL, P.NOME_GUERRA) AS EMAIL
                 FROM PCEMPR P
-                LEFT JOIN PCCONTRO C ON P.MATRICULA = C.CODUSUARIO AND C.CODROTINA = 2075
                 WHERE P.USUARIOBD = UPPER(:USUARIO)
                 AND P.SENHABD = CRYPT(UPPER(:SENHA), P.USUARIOBD)
                 AND ROWNUM = 1
-            ", [
+            ', [
                 'USUARIO' => strtoupper($usuario),
                 'SENHA' => strtoupper($senha),
             ]);
@@ -124,7 +130,6 @@ class Pcempr extends Model implements AuthenticatableContract
             $nome = $userData->NOME ?? $userData->nome;
             $usuariobd = $userData->USUARIOBD ?? $userData->usuariobd;
             $email = $userData->EMAIL ?? $userData->email;
-            $permissao = ($userData->PERMISSAO ?? $userData->permissao) === 'S';
 
             // Converter encoding Windows-1252 para UTF-8
             $nome = is_string($nome) ? iconv('Windows-1252', 'UTF-8//IGNORE', $nome) : $nome;
@@ -133,17 +138,17 @@ class Pcempr extends Model implements AuthenticatableContract
 
             // Retornar array com dados convertidos
             return [
-                'matricula' => (int)$matricula,
+                'matricula' => (int) $matricula,
                 'nome' => trim($nome ?? ''),
                 'usuariobd' => trim($usuariobd ?? ''),
                 'email' => trim($email ?? ''),
-                'permissao' => $permissao,
             ];
         } catch (\Exception $e) {
             \Log::error('Erro na autenticação Oracle', [
                 'error' => $e->getMessage(),
                 'usuario' => $usuario,
             ]);
+
             return null;
         }
     }
