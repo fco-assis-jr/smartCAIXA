@@ -8,5 +8,7 @@ export type SharedData = {
     name: string;
     auth: Auth;
     sidebarOpen: boolean;
+    /** Menus restritos por setor (config/menu_access.php) que o usuário logado pode ver. */
+    menuAccess: Record<string, boolean>;
     [key: string]: unknown;
 };

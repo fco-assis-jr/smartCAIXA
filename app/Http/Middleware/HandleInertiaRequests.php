@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -42,6 +43,33 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'menuAccess' => $this->menuAccess(),
         ];
+    }
+
+    /**
+     * Quais menus restritos por setor (config/menu_access.php) o usuário
+     * autenticado pode ver — usado pra esconder itens da barra lateral.
+     * A aplicação real da restrição é feita pelo middleware 'setor' nas
+     * rotas; isto é só pra não mostrar um link que vai dar 403.
+     *
+     * @return array<string, bool>
+     */
+    private function menuAccess(): array
+    {
+        if (! Auth::check()) {
+            return [];
+        }
+
+        // O Eloquent devolve os atributos do PCEMPR em minúsculo quando o
+        // usuário é recarregado da sessão (via find()) — só o objeto
+        // montado à mão no login usa maiúsculo. Checar os dois casos.
+        $usuario = Auth::user();
+        $codSetor = (int) ($usuario->CODSETOR ?? $usuario->codsetor ?? 0);
+
+        return array_map(
+            fn (array $setoresPermitidos) => in_array($codSetor, $setoresPermitidos, true),
+            config('menu_access', []),
+        );
     }
 }

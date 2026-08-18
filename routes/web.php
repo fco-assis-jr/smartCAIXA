@@ -61,16 +61,16 @@ Route::middleware(['auth'])->prefix('smartcaixa')->group(function () {
     Route::post('baixa-produto/buscar-produtos', [BaixaProdutoController::class, 'buscarProdutos'])->name('baixa-produto.buscar-produtos');
     Route::post('baixa-produto/buscar-por-codigo', [BaixaProdutoController::class, 'buscarPorCodigoAuxiliar'])->name('baixa-produto.buscar-por-codigo');
 
-    // Ferramentas
-    Route::prefix('ferramentas')->name('ferramentas.')->group(function () {
+    // Ferramentas — restrito por setor (ver config/menu_access.php)
+    Route::middleware('setor:ferramentas')->prefix('ferramentas')->name('ferramentas.')->group(function () {
         // DBLink
         Route::get('dblink', [DblinkController::class, 'index'])->name('dblink.index');
         Route::post('dblink/recriar', [DblinkController::class, 'recriar'])->name('dblink.recriar');
         Route::get('dblink/status', [DblinkController::class, 'status'])->name('dblink.status');
     });
 
-    // Pesquisar Vendas
-    Route::prefix('pesquisar-vendas')->name('pesquisar-vendas.')->group(function () {
+    // Pesquisar Vendas — restrito por setor (ver config/menu_access.php)
+    Route::middleware('setor:consultar-vendas')->prefix('pesquisar-vendas')->name('pesquisar-vendas.')->group(function () {
         // Produtos Por Gramatura (mesclada na tela "Vendas por Produto" abaixo — mantém apenas a busca)
         Route::redirect('produtos-por-gramatura', '/smartcaixa/pesquisar-vendas/produtos-por-descricao');
         Route::post('produtos-por-gramatura/buscar', [ProdutosPorGramaturaController::class, 'buscar'])->name('produtos-por-gramatura.buscar');

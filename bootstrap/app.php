@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureSetorAcesso;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware de segurança para rotas autenticadas
         $middleware->alias([
             'session.security' => ValidateSessionSecurity::class,
+            'setor' => EnsureSetorAcesso::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
