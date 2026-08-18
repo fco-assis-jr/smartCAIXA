@@ -117,22 +117,35 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const contextoDefinido = Boolean(data.codFilial && data.tipoBaixa);
     const ehVencimento = data.tipoBaixa === TIPO_VENCIMENTO;
 
-    // Produto encontrado, esperando confirmação de quantidade (e data de
-    // vencimento, se for o caso) — enquanto isso não for resolvido
+    // Só produto vendido por peso precisa de quantidade digitada — os
+    // demais (unidade, caixa etc.) são sempre baixados 1 a 1, direto.
+    const ehPorQuilo = (produto: Produto) =>
+        produto.UNIDADE?.toUpperCase() === 'KG';
+
+    // Produto encontrado, esperando confirmação — só existe quando falta
+    // alguma informação que não dá pra assumir (quantidade em produto por
+    // quilo, e/ou data em Vencimento); enquanto isso não for resolvido
     // (confirmar ou cancelar), não deixa bipar o próximo.
     const temPendencia = Boolean(produtoPendente);
+    const precisaQuantidade = Boolean(
+        produtoPendente && ehPorQuilo(produtoPendente),
+    );
 
-    // Foca a quantidade assim que a pendência aparece — igual em todos os
-    // tipos de baixa, inclusive Vencimento (Tab leva pro campo de data
-    // depois, na ordem em que aparecem na tela).
+    // Foca o primeiro campo que precisa de atenção: a quantidade quando
+    // ela existe na tela (Tab leva pro vencimento depois, na ordem em que
+    // aparecem), senão direto a data de vencimento.
     useEffect(() => {
         if (!temPendencia) return;
 
         setTimeout(() => {
-            quantidadeInputRef.current?.focus();
-            quantidadeInputRef.current?.select();
+            if (precisaQuantidade) {
+                quantidadeInputRef.current?.focus();
+                quantidadeInputRef.current?.select();
+            } else if (ehVencimento) {
+                dataVencimentoInputRef.current?.focus();
+            }
         }, 100);
-    }, [temPendencia]);
+    }, [temPendencia, precisaQuantidade, ehVencimento]);
 
     // A filial e o tipo de baixa travam assim que o primeiro produto é adicionado —
     // uma baixa não pode misturar filiais ou tipos diferentes no mesmo relatório.
@@ -246,15 +259,29 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             );
 
             if (response.data.produto) {
-                // Pausa pra confirmar quantidade (e data de vencimento, se
-                // for o caso) — só entra na lista em confirmarAdicao().
-                setProdutoPendente({
+                const produtoBase = {
                     ...response.data.produto,
                     quantidade: 1,
-                });
-                setQuantidadeDigitada('1');
-                setDataDigitada('');
+                };
                 setCodAuxiliar('');
+
+                if (ehPorQuilo(produtoBase) || ehVencimento) {
+                    // Pausa pra confirmar quantidade (produto por quilo)
+                    // e/ou data de vencimento — só entra na lista em
+                    // confirmarAdicao().
+                    setProdutoPendente(produtoBase);
+                    setQuantidadeDigitada('1');
+                    setDataDigitada('');
+                } else {
+                    // Nada a confirmar: unidade/caixa etc. sempre baixa 1,
+                    // direto na lista, sem pausa.
+                    adicionarOuSomarProduto(produtoBase);
+                    setUltimoAdicionado(produtoBase);
+
+                    setTimeout(() => {
+                        codAuxiliarInputRef.current?.focus();
+                    }, 100);
+                }
             }
         } catch (error) {
             console.error('Erro ao buscar produto:', error);
@@ -278,7 +305,11 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const confirmarAdicao = () => {
         if (!produtoPendente) return;
 
-        const quantidade = parseQuantidade(quantidadeDigitada);
+        // Sem o campo de quantidade na tela (produto não é por quilo), a
+        // baixa é sempre de 1 — nada pra validar aqui.
+        const quantidade = precisaQuantidade
+            ? parseQuantidade(quantidadeDigitada)
+            : 1;
         if (!quantidade) {
             showAlert(
                 'Quantidade inválida. Informe um valor maior que zero.',
@@ -491,9 +522,15 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                 </InputGroup>
                                 {temPendencia && (
                                     <p className="mt-1.5 text-xs text-warning">
-                                        Confirme a quantidade
+                                        Confirme
+                                        {precisaQuantidade
+                                            ? ' a quantidade'
+                                            : ''}
+                                        {precisaQuantidade &&
+                                            ehVencimento &&
+                                            ' e'}
                                         {ehVencimento &&
-                                            ' e a data de vencimento'}{' '}
+                                            ' a data de vencimento'}{' '}
                                         abaixo antes de bipar o próximo produto.
                                     </p>
                                 )}
@@ -530,32 +567,34 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     </div>
 
                                     <div className="flex flex-wrap items-end gap-2">
-                                        <div className="space-y-1">
-                                            <Label
-                                                htmlFor="quantidadePendente"
-                                                className="text-xs text-muted-foreground"
-                                            >
-                                                Quantidade
-                                            </Label>
-                                            <Input
-                                                ref={quantidadeInputRef}
-                                                id="quantidadePendente"
-                                                type="text"
-                                                inputMode="decimal"
-                                                value={quantidadeDigitada}
-                                                onChange={(e) =>
-                                                    setQuantidadeDigitada(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        confirmarAdicao();
+                                        {precisaQuantidade && (
+                                            <div className="space-y-1">
+                                                <Label
+                                                    htmlFor="quantidadePendente"
+                                                    className="text-xs text-muted-foreground"
+                                                >
+                                                    Quantidade
+                                                </Label>
+                                                <Input
+                                                    ref={quantidadeInputRef}
+                                                    id="quantidadePendente"
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={quantidadeDigitada}
+                                                    onChange={(e) =>
+                                                        setQuantidadeDigitada(
+                                                            e.target.value,
+                                                        )
                                                     }
-                                                }}
-                                                className="w-24 font-mono"
-                                            />
-                                        </div>
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            confirmarAdicao();
+                                                        }
+                                                    }}
+                                                    className="w-24 font-mono"
+                                                />
+                                            </div>
+                                        )}
 
                                         {ehVencimento && (
                                             <div className="space-y-1">
