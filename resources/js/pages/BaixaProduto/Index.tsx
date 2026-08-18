@@ -117,18 +117,21 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     const contextoDefinido = Boolean(data.codFilial && data.tipoBaixa);
     const ehVencimento = data.tipoBaixa === TIPO_VENCIMENTO;
 
-    // Só produto vendido por peso precisa de quantidade digitada — os
-    // demais (unidade, caixa etc.) são sempre baixados 1 a 1, direto.
+    // Fora de Vencimento, só produto vendido por peso precisa de
+    // quantidade digitada — os demais (unidade, caixa etc.) são sempre
+    // baixados 1 a 1, direto. Em Vencimento, a quantidade sempre aparece,
+    // não importa o produto — o vencimento continua igual pra todos.
     const ehPorQuilo = (produto: Produto) =>
         produto.UNIDADE?.toUpperCase() === 'KG';
 
     // Produto encontrado, esperando confirmação — só existe quando falta
     // alguma informação que não dá pra assumir (quantidade em produto por
-    // quilo, e/ou data em Vencimento); enquanto isso não for resolvido
-    // (confirmar ou cancelar), não deixa bipar o próximo.
+    // quilo ou em qualquer produto de Vencimento, e/ou data em
+    // Vencimento); enquanto isso não for resolvido (confirmar ou
+    // cancelar), não deixa bipar o próximo.
     const temPendencia = Boolean(produtoPendente);
     const precisaQuantidade = Boolean(
-        produtoPendente && ehPorQuilo(produtoPendente),
+        produtoPendente && (ehVencimento || ehPorQuilo(produtoPendente)),
     );
 
     // Foca o primeiro campo que precisa de atenção: a quantidade quando
