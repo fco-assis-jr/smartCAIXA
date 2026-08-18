@@ -82,6 +82,7 @@ class Produto extends Model
         if ($codFilial) {
             return $query->where('CODFILIAL', $codFilial);
         }
+
         return $query;
     }
 

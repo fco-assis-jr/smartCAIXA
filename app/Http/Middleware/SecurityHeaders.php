@@ -33,8 +33,8 @@ class SecurityHeaders
 
         // Adicionar Vite dev server em desenvolvimento
         if ($isDevelopment) {
-            $scriptSrc .= " http://127.0.0.1:5173 http://localhost:5173";
-            $connectSrc .= " http://127.0.0.1:5173 http://localhost:5173";
+            $scriptSrc .= ' http://127.0.0.1:5173 http://localhost:5173';
+            $connectSrc .= ' http://127.0.0.1:5173 http://localhost:5173';
         }
 
         $cspDirectives = [

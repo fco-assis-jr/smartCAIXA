@@ -22,17 +22,17 @@ class ValidateSessionSecurity
             $currentFingerprint = $this->generateFingerprint($request);
 
             // Se não existe fingerprint na sessão, criar
-            if (!$session->has('_security_fingerprint')) {
+            if (! $session->has('_security_fingerprint')) {
                 $session->put('_security_fingerprint', $currentFingerprint);
 
                 // Garantir que _last_activity existe
-                if (!$session->has('_last_activity')) {
+                if (! $session->has('_last_activity')) {
                     $session->put('_last_activity', time());
                 }
 
                 \Log::debug('Fingerprint criado no middleware (primeira requisição)', [
                     'user_id' => Auth::id(),
-                    'fingerprint' => substr($currentFingerprint, 0, 10) . '...',
+                    'fingerprint' => substr($currentFingerprint, 0, 10).'...',
                 ]);
             } else {
                 // Validar fingerprint
@@ -42,8 +42,8 @@ class ValidateSessionSecurity
                     // Log para debug - mas NÃO fazer logout imediatamente
                     \Log::info('Fingerprint diferente detectado - atualizando', [
                         'user_id' => Auth::id(),
-                        'stored' => substr($storedFingerprint, 0, 10) . '...',
-                        'current' => substr($currentFingerprint, 0, 10) . '...',
+                        'stored' => substr($storedFingerprint, 0, 10).'...',
+                        'current' => substr($currentFingerprint, 0, 10).'...',
                     ]);
 
                     // Atualizar fingerprint (tolerante a mudanças de rede/proxy)
@@ -94,8 +94,8 @@ class ValidateSessionSecurity
     private function generateFingerprint(Request $request): string
     {
         return hash('sha256',
-            $request->userAgent() .
-            '|' .
+            $request->userAgent().
+            '|'.
             config('app.key')
         );
     }
