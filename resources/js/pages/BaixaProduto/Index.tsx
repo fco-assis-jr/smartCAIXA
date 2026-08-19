@@ -632,43 +632,45 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                     )}
 
                                 {/* Multiplicador travado antes do "*" —
-                                reaproveita o mesmo campo/estilo de
-                                "Quantidade" do fluxo de produto por quilo,
-                                só que exibido antes da busca. Cursor
-                                continua no código, não aqui. */}
+                                reaproveita o mesmo layout (moldura, cor,
+                                animação) e o mesmo campo "Quantidade" do
+                                painel de produto por quilo abaixo, só que
+                                exibido antes da busca. Cursor continua no
+                                código, não aqui. */}
                                 {multiplicadorAtivo && (
-                                    <div className="mt-2 flex flex-wrap items-end gap-2">
-                                        <div className="space-y-1">
-                                            <Label
-                                                htmlFor="quantidadeMultiplicador"
-                                                className="text-xs text-muted-foreground"
+                                    <div className="mt-2 flex animate-in flex-col gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 duration-300 fade-in slide-in-from-top-2">
+                                        <div className="flex flex-wrap items-end gap-2">
+                                            <div className="space-y-1">
+                                                <Label
+                                                    htmlFor="quantidadeMultiplicador"
+                                                    className="text-xs text-muted-foreground"
+                                                >
+                                                    Quantidade
+                                                </Label>
+                                                <Input
+                                                    id="quantidadeMultiplicador"
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={quantidadeDigitada}
+                                                    onChange={(e) =>
+                                                        setQuantidadeDigitada(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-24 font-mono"
+                                                />
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                onClick={cancelarMultiplicador}
                                             >
-                                                Quantidade
-                                            </Label>
-                                            <Input
-                                                id="quantidadeMultiplicador"
-                                                type="text"
-                                                inputMode="decimal"
-                                                value={quantidadeDigitada}
-                                                onChange={(e) =>
-                                                    setQuantidadeDigitada(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-24 font-mono"
-                                            />
+                                                Cancelar
+                                            </Button>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={cancelarMultiplicador}
-                                        >
-                                            Cancelar
-                                        </Button>
-                                        <p className="text-xs text-primary">
-                                            Bipe ou digite o código — vai entrar
-                                            multiplicado por essa quantidade.
-                                            Esc pra cancelar.
+                                        <p className="text-xs text-muted-foreground">
+                                            Bipe ou digite o código no campo
+                                            acima — vai entrar multiplicado por
+                                            essa quantidade. Esc pra cancelar.
                                         </p>
                                     </div>
                                 )}
