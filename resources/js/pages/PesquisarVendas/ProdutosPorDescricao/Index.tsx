@@ -7,13 +7,14 @@ import {
     ArrowUp,
     ArrowUpDown,
     Calendar as CalendarIcon,
+    Check,
     ChevronDown,
     ChevronUp,
     FileText,
     Search,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
 import { FilialCombobox } from '@/components/filial-combobox';
 import { type ComboboxOption } from '@/components/generic-combobox';
@@ -123,9 +124,13 @@ const paraNumero = (valor: number | string | undefined): number => {
     return typeof numero === 'number' && !isNaN(numero) ? numero : 0;
 };
 
-const valorVenda = (venda: Venda) => paraNumero(venda.QT) * paraNumero(venda.PUNIT);
+const valorVenda = (venda: Venda) =>
+    paraNumero(venda.QT) * paraNumero(venda.PUNIT);
 
-const chaveOrdenacao = (venda: Venda, coluna: ColunaOrdenacao): number | string => {
+const chaveOrdenacao = (
+    venda: Venda,
+    coluna: ColunaOrdenacao,
+): number | string => {
     switch (coluna) {
         case 'QT':
         case 'PUNIT':
@@ -160,6 +165,11 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
     const [tipoBusca, setTipoBusca] = useState<TipoBusca>('descricao');
     const [gramatura, setGramatura] = useState('');
     const [openCombobox, setOpenCombobox] = useState(false);
+    // Guarda se Ctrl/Cmd estava pressionado no mousedown do item clicado —
+    // onSelect do cmdk só devolve o valor, não o evento, então captura o
+    // modificador aqui (onMouseDown não é sobrescrito pelo cmdk, diferente
+    // de onClick) pra saber se é multi-seleção ou clique normal.
+    const ctrlPressionadoRef = useRef(false);
     const [alert, setAlert] = useState<AlertState>({
         open: false,
         message: '',
@@ -221,16 +231,30 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
         }
     }, [termoBusca, data.filial, tipoBusca, porGramatura]);
 
-    const adicionarProduto = (produto: Produto) => {
-        if (
-            !produtosSelecionados.find(
-                (p) => p.CODAUXILIAR === produto.CODAUXILIAR,
-            )
-        ) {
-            setProdutosSelecionados([...produtosSelecionados, produto]);
-            setTermoBusca('');
-            setOpenCombobox(false);
+    const adicionarProduto = (produto: Produto, multiSelecao = false) => {
+        const jaSelecionado = produtosSelecionados.some(
+            (p) => p.CODAUXILIAR === produto.CODAUXILIAR,
+        );
+
+        // Ctrl/Cmd+clique: alterna o produto na seleção (marca ou desmarca)
+        // sem fechar a lista nem limpar a busca, pra poder marcar vários de
+        // uma vez, igual numa multi-seleção nativa (Explorer/Finder).
+        if (multiSelecao) {
+            setProdutosSelecionados(
+                jaSelecionado
+                    ? produtosSelecionados.filter(
+                          (p) => p.CODAUXILIAR !== produto.CODAUXILIAR,
+                      )
+                    : [...produtosSelecionados, produto],
+            );
+            return;
         }
+
+        if (!jaSelecionado) {
+            setProdutosSelecionados([...produtosSelecionados, produto]);
+        }
+        setTermoBusca('');
+        setOpenCombobox(false);
     };
 
     const removerProduto = (codauxiliar: string) => {
@@ -603,47 +627,80 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
                                                                 {produtos.map(
                                                                     (
                                                                         produto,
-                                                                    ) => (
-                                                                        <CommandItem
-                                                                            key={
-                                                                                produto.CODAUXILIAR
-                                                                            }
-                                                                            value={
-                                                                                produto.CODAUXILIAR
-                                                                            }
-                                                                            onSelect={() =>
-                                                                                adicionarProduto(
-                                                                                    produto,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <div className="flex flex-col">
-                                                                                <span className="font-medium">
-                                                                                    {
-                                                                                        produto.DESCRICAO
-                                                                                    }
-                                                                                </span>
-                                                                                <span className="text-xs text-muted-foreground">
-                                                                                    Aux:{' '}
-                                                                                    {
-                                                                                        produto.CODAUXILIAR
-                                                                                    }{' '}
-                                                                                    |
-                                                                                    Prod:{' '}
-                                                                                    {
-                                                                                        produto.CODPROD
-                                                                                    }{' '}
-                                                                                    |{' '}
-                                                                                    {
-                                                                                        produto.EMBALAGEM
-                                                                                    }
-                                                                                </span>
-                                                                            </div>
-                                                                        </CommandItem>
-                                                                    ),
+                                                                    ) => {
+                                                                        const selecionado =
+                                                                            produtosSelecionados.some(
+                                                                                (
+                                                                                    p,
+                                                                                ) =>
+                                                                                    p.CODAUXILIAR ===
+                                                                                    produto.CODAUXILIAR,
+                                                                            );
+
+                                                                        return (
+                                                                            <CommandItem
+                                                                                key={
+                                                                                    produto.CODAUXILIAR
+                                                                                }
+                                                                                value={
+                                                                                    produto.CODAUXILIAR
+                                                                                }
+                                                                                onMouseDown={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    ctrlPressionadoRef.current =
+                                                                                        e.ctrlKey ||
+                                                                                        e.metaKey;
+                                                                                }}
+                                                                                onSelect={() => {
+                                                                                    adicionarProduto(
+                                                                                        produto,
+                                                                                        ctrlPressionadoRef.current,
+                                                                                    );
+                                                                                    ctrlPressionadoRef.current = false;
+                                                                                }}
+                                                                                className={
+                                                                                    selecionado
+                                                                                        ? 'bg-secondary/60'
+                                                                                        : undefined
+                                                                                }
+                                                                            >
+                                                                                <div className="flex flex-1 flex-col">
+                                                                                    <span className="font-medium">
+                                                                                        {
+                                                                                            produto.DESCRICAO
+                                                                                        }
+                                                                                    </span>
+                                                                                    <span className="text-xs text-muted-foreground">
+                                                                                        Aux:{' '}
+                                                                                        {
+                                                                                            produto.CODAUXILIAR
+                                                                                        }{' '}
+                                                                                        |
+                                                                                        Prod:{' '}
+                                                                                        {
+                                                                                            produto.CODPROD
+                                                                                        }{' '}
+                                                                                        |{' '}
+                                                                                        {
+                                                                                            produto.EMBALAGEM
+                                                                                        }
+                                                                                    </span>
+                                                                                </div>
+                                                                                {selecionado && (
+                                                                                    <Check className="size-4 shrink-0 text-primary" />
+                                                                                )}
+                                                                            </CommandItem>
+                                                                        );
+                                                                    },
                                                                 )}
                                                             </CommandGroup>
                                                         </CommandList>
+                                                        <div className="border-t px-3 py-1.5 text-xs text-muted-foreground">
+                                                            Ctrl+clique para
+                                                            selecionar vários
+                                                            sem fechar a lista
+                                                        </div>
                                                     </Command>
                                                 </PopoverContent>
                                             </Popover>
@@ -928,86 +985,98 @@ export default function ProdutosPorDescricao({ filiais }: Props) {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {vendasPaginadas.map((venda, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell className="font-mono text-sm font-medium">
-                                                        {venda.CODAUXILIAR}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-sm">
-                                                        {venda.CODPROD}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div
-                                                            className="truncate"
-                                                            title={
-                                                                venda.DESCRICAO
-                                                            }
-                                                        >
-                                                            {venda.DESCRICAO}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-medium tabular-nums">
-                                                        {formatarPeso(venda.QT)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right tabular-nums">
-                                                        {formatarValor(
-                                                            venda.PUNIT,
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-semibold tabular-nums">
-                                                        {formatarValor(
-                                                            (typeof venda.QT ===
-                                                            'string'
-                                                                ? parseFloat(
-                                                                      venda.QT,
-                                                                  )
-                                                                : venda.QT ||
-                                                                  0) *
-                                                                (typeof venda.PUNIT ===
+                                            {vendasPaginadas.map(
+                                                (venda, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell className="font-mono text-sm font-medium">
+                                                            {venda.CODAUXILIAR}
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-sm">
+                                                            {venda.CODPROD}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div
+                                                                className="truncate"
+                                                                title={
+                                                                    venda.DESCRICAO
+                                                                }
+                                                            >
+                                                                {
+                                                                    venda.DESCRICAO
+                                                                }
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-medium tabular-nums">
+                                                            {formatarPeso(
+                                                                venda.QT,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right tabular-nums">
+                                                            {formatarValor(
+                                                                venda.PUNIT,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-semibold tabular-nums">
+                                                            {formatarValor(
+                                                                (typeof venda.QT ===
                                                                 'string'
                                                                     ? parseFloat(
-                                                                          venda.PUNIT,
+                                                                          venda.QT,
                                                                       )
-                                                                    : venda.PUNIT ||
-                                                                      0),
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {venda.QRCODENFCE ? (
-                                                            <a
-                                                                href={
-                                                                    venda.QRCODENFCE
+                                                                    : venda.QT ||
+                                                                      0) *
+                                                                    (typeof venda.PUNIT ===
+                                                                    'string'
+                                                                        ? parseFloat(
+                                                                              venda.PUNIT,
+                                                                          )
+                                                                        : venda.PUNIT ||
+                                                                          0),
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {venda.QRCODENFCE ? (
+                                                                <a
+                                                                    href={
+                                                                        venda.QRCODENFCE
+                                                                    }
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                                                                    title="Abrir QR Code da nota"
+                                                                >
+                                                                    <FileText className="size-3.5" />
+                                                                    {
+                                                                        venda.NUMNOTA
+                                                                    }
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-sm">
+                                                                    {
+                                                                        venda.NUMNOTA
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-center font-medium">
+                                                            {venda.CAIXA}
+                                                        </TableCell>
+                                                        <TableCell className="text-center font-mono text-sm">
+                                                            {venda.HORA}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div
+                                                                className="truncate text-sm"
+                                                                title={
+                                                                    venda.NOME
                                                                 }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                                                                title="Abrir QR Code da nota"
                                                             >
-                                                                <FileText className="size-3.5" />
-                                                                {venda.NUMNOTA}
-                                                            </a>
-                                                        ) : (
-                                                            <span className="text-sm">
-                                                                {venda.NUMNOTA}
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-center font-medium">
-                                                        {venda.CAIXA}
-                                                    </TableCell>
-                                                    <TableCell className="text-center font-mono text-sm">
-                                                        {venda.HORA}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div
-                                                            className="truncate text-sm"
-                                                            title={venda.NOME}
-                                                        >
-                                                            {venda.NOME}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                                                {venda.NOME}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ),
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>
