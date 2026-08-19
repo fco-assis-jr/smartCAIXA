@@ -8,7 +8,6 @@ import {
     Receipt,
     ScanBarcode,
     Trash2,
-    X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
@@ -21,9 +20,7 @@ import { Input } from '@/components/ui/input';
 import {
     InputGroup,
     InputGroupAddon,
-    InputGroupButton,
     InputGroupInput,
-    InputGroupText,
 } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -78,12 +75,12 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     );
     const [buscandoProduto, setBuscandoProduto] = useState(false);
     const [codAuxiliar, setCodAuxiliar] = useState('');
-    // Quantidade "travada" ao digitar "<quantidade>*" no campo de código,
-    // igual à multiplicação manual de PDV — some quando o produto entra
-    // na lista (ou se o operador cancelar). Não existe em Vencimento.
-    const [multiplicadorPendente, setMultiplicadorPendente] = useState<
-        number | null
-    >(null);
+    // Ativado ao digitar "<quantidade>*" no campo de código, igual à
+    // multiplicação manual de PDV — reaproveita o mesmo campo/estado de
+    // quantidadeDigitada usado depois de encontrar um produto por quilo,
+    // só que aqui aparece ANTES da busca. Some quando o produto entra na
+    // lista (ou se o operador cancelar). Não existe em Vencimento.
+    const [multiplicadorAtivo, setMultiplicadorAtivo] = useState(false);
     const [quantidadeDigitada, setQuantidadeDigitada] = useState('1');
     const [dataDigitada, setDataDigitada] = useState('');
     const [alert, setAlert] = useState<AlertState>({
@@ -163,8 +160,11 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     // o tipo de baixa com um multiplicador travado, descarta em vez de
     // deixar pendente um valor que não vai ser usado.
     useEffect(() => {
-        if (ehVencimento) setMultiplicadorPendente(null);
-    }, [ehVencimento]);
+        if (ehVencimento && multiplicadorAtivo) {
+            setMultiplicadorAtivo(false);
+            setQuantidadeDigitada('1');
+        }
+    }, [ehVencimento, multiplicadorAtivo]);
 
     // A filial e o tipo de baixa travam assim que o primeiro produto é adicionado —
     // uma baixa não pode misturar filiais ou tipos diferentes no mesmo relatório.
@@ -199,10 +199,12 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
 
     // Digitar "<quantidade>*" no campo de código funciona como a
     // multiplicação manual de PDV: ao digitar o "*", a quantidade some do
-    // campo e fica travada à parte (badge no input), o campo limpa e o
-    // cursor continua nele pra bipar/digitar o código — no Enter, o
-    // produto entra direto na lista com essa quantidade. Não vale em
-    // Vencimento, que sempre pede quantidade e data à parte.
+    // campo de código e aparece no campo "Quantidade" (o mesmo reaproveitado
+    // do fluxo de produto por quilo, só que exibido antes da busca em vez
+    // de depois); o campo de código limpa e o cursor continua nele pra
+    // bipar/digitar o código — no Enter, o produto entra direto na lista
+    // com essa quantidade. Não vale em Vencimento, que sempre pede
+    // quantidade e data à parte.
     const digitarCodAuxiliar = (valor: string) => {
         if (ehVencimento || !valor.includes('*')) {
             setCodAuxiliar(valor);
@@ -210,14 +212,24 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         }
 
         const [antesAsterisco, ...resto] = valor.split('*');
-        const quantidade = parseQuantidade(antesAsterisco);
 
         // "*" sem quantidade válida antes (campo vazio, "0*", "-1*" etc.)
-        // — ignora o "*" digitado, sem travar multiplicador nenhum.
-        if (quantidade) {
-            setMultiplicadorPendente(quantidade);
+        // — ignora o "*" digitado, sem ativar o multiplicador.
+        if (parseQuantidade(antesAsterisco)) {
+            setMultiplicadorAtivo(true);
+            setQuantidadeDigitada(antesAsterisco.trim());
         }
         setCodAuxiliar(resto.join('*'));
+    };
+
+    // Esc ou o botão "Cancelar" descartam o multiplicador travado, sem
+    // perder o foco do campo de código.
+    const cancelarMultiplicador = () => {
+        setMultiplicadorAtivo(false);
+        setQuantidadeDigitada('1');
+        setTimeout(() => {
+            codAuxiliarInputRef.current?.focus();
+        }, 100);
     };
 
     // Máscara dd/mm/aaaa enquanto digita — só dígitos contam, o resto (as
@@ -290,6 +302,20 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             return;
         }
 
+        // Multiplicador travado antes do "*" — valida a quantidade digitada
+        // no campo reaproveitado antes de sair buscando o produto.
+        let multiplicador: number | undefined;
+        if (multiplicadorAtivo) {
+            multiplicador = parseQuantidade(quantidadeDigitada);
+            if (!multiplicador) {
+                showAlert(
+                    'Quantidade inválida. Informe um valor maior que zero.',
+                    'warning',
+                );
+                return;
+            }
+        }
+
         setBuscandoProduto(true);
         try {
             const response = await axios.post<{ produto: Produto }>(
@@ -303,16 +329,17 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             if (response.data.produto) {
                 const produtoBase = {
                     ...response.data.produto,
-                    quantidade: multiplicadorPendente ?? 1,
+                    quantidade: multiplicador ?? 1,
                 };
                 setCodAuxiliar('');
 
-                if (multiplicadorPendente) {
+                if (multiplicador) {
                     // Quantidade já veio do multiplicador travado antes do
                     // "*" — entra direto na lista, sem pausa pra confirmar.
                     adicionarOuSomarProduto(produtoBase);
                     setUltimoAdicionado(produtoBase);
-                    setMultiplicadorPendente(null);
+                    setMultiplicadorAtivo(false);
+                    setQuantidadeDigitada('1');
 
                     setTimeout(() => {
                         codAuxiliarInputRef.current?.focus();
@@ -419,7 +446,8 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         setProdutos([]);
         setProdutoPendente(null);
         setUltimoAdicionado(null);
-        setMultiplicadorPendente(null);
+        setMultiplicadorAtivo(false);
+        setQuantidadeDigitada('1');
     };
 
     const finalizarBaixa = async () => {
@@ -559,9 +587,9 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                                 buscarProduto();
                                             } else if (
                                                 e.key === 'Escape' &&
-                                                multiplicadorPendente !== null
+                                                multiplicadorAtivo
                                             ) {
-                                                setMultiplicadorPendente(null);
+                                                cancelarMultiplicador();
                                             }
                                         }}
                                         placeholder={
@@ -577,24 +605,6 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                         className="font-mono"
                                         autoFocus
                                     />
-                                    {multiplicadorPendente !== null && (
-                                        <InputGroupAddon align="inline-end">
-                                            <InputGroupText className="font-mono font-bold text-primary">
-                                                {multiplicadorPendente}×
-                                            </InputGroupText>
-                                            <InputGroupButton
-                                                size="icon-xs"
-                                                onClick={() =>
-                                                    setMultiplicadorPendente(
-                                                        null,
-                                                    )
-                                                }
-                                                title="Cancelar multiplicador"
-                                            >
-                                                <X className="size-3" />
-                                            </InputGroupButton>
-                                        </InputGroupAddon>
-                                    )}
                                 </InputGroup>
                                 {temPendencia && (
                                     <p className="mt-1.5 text-xs text-warning">
@@ -612,7 +622,7 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                 )}
                                 {!temPendencia &&
                                     !ehVencimento &&
-                                    multiplicadorPendente === null && (
+                                    !multiplicadorAtivo && (
                                         <p className="mt-1.5 text-xs text-muted-foreground">
                                             Dica: digite a quantidade e{' '}
                                             <span className="font-mono">*</span>{' '}
@@ -620,12 +630,47 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                             já multiplicado, sem confirmar.
                                         </p>
                                     )}
-                                {multiplicadorPendente !== null && (
-                                    <p className="mt-1.5 text-xs text-primary">
-                                        Bipe ou digite o código — vai entrar
-                                        multiplicado por {multiplicadorPendente}
-                                        . Esc pra cancelar.
-                                    </p>
+
+                                {/* Multiplicador travado antes do "*" —
+                                reaproveita o mesmo campo/estilo de
+                                "Quantidade" do fluxo de produto por quilo,
+                                só que exibido antes da busca. Cursor
+                                continua no código, não aqui. */}
+                                {multiplicadorAtivo && (
+                                    <div className="mt-2 flex flex-wrap items-end gap-2">
+                                        <div className="space-y-1">
+                                            <Label
+                                                htmlFor="quantidadeMultiplicador"
+                                                className="text-xs text-muted-foreground"
+                                            >
+                                                Quantidade
+                                            </Label>
+                                            <Input
+                                                id="quantidadeMultiplicador"
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={quantidadeDigitada}
+                                                onChange={(e) =>
+                                                    setQuantidadeDigitada(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-24 font-mono"
+                                            />
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={cancelarMultiplicador}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <p className="text-xs text-primary">
+                                            Bipe ou digite o código — vai entrar
+                                            multiplicado por essa quantidade.
+                                            Esc pra cancelar.
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 
