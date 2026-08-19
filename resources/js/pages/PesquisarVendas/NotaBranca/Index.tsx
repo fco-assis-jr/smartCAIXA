@@ -2,7 +2,14 @@ import { Head, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon, FileText, Search } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
+    Calendar as CalendarIcon,
+    FileText,
+    Search,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CustomAlert } from '@/components/custom-alert';
 import { FilialCombobox } from '@/components/filial-combobox';
@@ -60,6 +67,15 @@ type AlertState = {
     variant: 'default' | 'error' | 'warning' | 'success';
 };
 
+// Colunas ordenáveis clicando no título da tabela.
+type ColunaOrdenacao =
+    | 'NUMNOTA'
+    | 'DATA_HORA'
+    | 'CLIENTE'
+    | 'CPF_CNPJ'
+    | 'VLTOTAL'
+    | 'ORIGEM_NFE';
+
 const formatarValor = (valor: number | string | undefined) => {
     const numero = typeof valor === 'string' ? parseFloat(valor) : valor;
     if (!numero || isNaN(numero)) return 'R$ 0,00';
@@ -77,8 +93,36 @@ const formatarData = (valor: string) => {
     return ano && mes && dia ? `${dia}/${mes}/${ano}` : valor;
 };
 
+const paraNumero = (valor: number | string | undefined): number => {
+    const numero = typeof valor === 'string' ? parseFloat(valor) : valor;
+    return typeof numero === 'number' && !isNaN(numero) ? numero : 0;
+};
+
+const chaveOrdenacao = (
+    nota: NotaBranca,
+    coluna: ColunaOrdenacao,
+): number | string => {
+    switch (coluna) {
+        case 'NUMNOTA':
+            return paraNumero(nota.NUMNOTA);
+        case 'VLTOTAL':
+            return paraNumero(nota.VLTOTAL);
+        case 'DATA_HORA':
+            // DTSAIDA só tem a data (a hora vem sempre 00:00:00 — não é
+            // confiável); a hora real da venda é o campo HORA (HH:MM), já
+            // zero-padded. Concatenar os dois dá uma chave que ordena
+            // corretamente por data e, dentro do mesmo dia, por hora.
+            return `${nota.DTSAIDA.split(' ')[0]}T${nota.HORA}`;
+        default:
+            return (nota[coluna] ?? '').toString().toLowerCase();
+    }
+};
+
 export default function NotaBranca({ filiais }: Props) {
     const [notas, setNotas] = useState<NotaBranca[]>([]);
+    // Mais recente primeiro por padrão (data/hora decrescente).
+    const [ordenarPor, setOrdenarPor] = useState<ColunaOrdenacao>('DATA_HORA');
+    const [ordemAscendente, setOrdemAscendente] = useState(false);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const [itensPorPagina, setItensPorPagina] = useState(25);
     const [buscando, setBuscando] = useState(false);
@@ -142,6 +186,8 @@ export default function NotaBranca({ filiais }: Props) {
             if (response.data.success) {
                 setNotas(response.data.notas);
                 setPaginaAtual(1);
+                setOrdenarPor('DATA_HORA');
+                setOrdemAscendente(false);
                 if (response.data.notas.length === 0) {
                     showAlert(
                         'Nenhuma nota encontrada com os filtros informados',
@@ -170,15 +216,62 @@ export default function NotaBranca({ filiais }: Props) {
         setPaginaAtual(1);
     };
 
+    // Ordena a lista inteira antes de paginar, senão cada página ordenaria
+    // só os itens que já estavam nela.
+    const notasOrdenadas = useMemo(() => {
+        const copia = [...notas];
+        copia.sort((a, b) => {
+            const chaveA = chaveOrdenacao(a, ordenarPor);
+            const chaveB = chaveOrdenacao(b, ordenarPor);
+            const comparacao =
+                typeof chaveA === 'number' && typeof chaveB === 'number'
+                    ? chaveA - chaveB
+                    : String(chaveA).localeCompare(String(chaveB), 'pt-BR');
+            return ordemAscendente ? comparacao : -comparacao;
+        });
+        return copia;
+    }, [notas, ordenarPor, ordemAscendente]);
+
     const notasPaginadas = useMemo(() => {
         const inicio = (paginaAtual - 1) * itensPorPagina;
-        return notas.slice(inicio, inicio + itensPorPagina);
-    }, [notas, paginaAtual, itensPorPagina]);
+        return notasOrdenadas.slice(inicio, inicio + itensPorPagina);
+    }, [notasOrdenadas, paginaAtual, itensPorPagina]);
 
     const trocarItensPorPagina = (itens: number) => {
         setItensPorPagina(itens);
         setPaginaAtual(1);
     };
+
+    // Clicar no mesmo título inverte a direção; clicar num título diferente
+    // passa a ordenar por ele, começando crescente.
+    const alternarOrdenacao = (coluna: ColunaOrdenacao) => {
+        if (coluna === ordenarPor) {
+            setOrdemAscendente((atual) => !atual);
+        } else {
+            setOrdenarPor(coluna);
+            setOrdemAscendente(true);
+        }
+        setPaginaAtual(1);
+    };
+
+    const cabecalhoOrdenavel = (coluna: ColunaOrdenacao, label: string) => (
+        <button
+            type="button"
+            onClick={() => alternarOrdenacao(coluna)}
+            className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+        >
+            <span>{label}</span>
+            {ordenarPor === coluna ? (
+                ordemAscendente ? (
+                    <ArrowUp className="size-3.5" />
+                ) : (
+                    <ArrowDown className="size-3.5" />
+                )
+            ) : (
+                <ArrowUpDown className="size-3.5 text-muted-foreground/40" />
+            )}
+        </button>
+    );
 
     return (
         <>
@@ -326,22 +419,40 @@ export default function NotaBranca({ filiais }: Props) {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="w-[90px]">
-                                                    Nota
+                                                    {cabecalhoOrdenavel(
+                                                        'NUMNOTA',
+                                                        'Nota',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[110px]">
-                                                    Data/Hora
+                                                    {cabecalhoOrdenavel(
+                                                        'DATA_HORA',
+                                                        'Data/Hora',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="min-w-[220px]">
-                                                    Cliente
+                                                    {cabecalhoOrdenavel(
+                                                        'CLIENTE',
+                                                        'Cliente',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[140px]">
-                                                    CPF/CNPJ
+                                                    {cabecalhoOrdenavel(
+                                                        'CPF_CNPJ',
+                                                        'CPF/CNPJ',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="text-right">
-                                                    Valor
+                                                    {cabecalhoOrdenavel(
+                                                        'VLTOTAL',
+                                                        'Valor',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[110px] text-center">
-                                                    Origem
+                                                    {cabecalhoOrdenavel(
+                                                        'ORIGEM_NFE',
+                                                        'Origem',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead className="w-[120px] text-center">
                                                     Ações

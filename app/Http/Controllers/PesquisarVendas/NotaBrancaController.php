@@ -148,7 +148,7 @@ class NotaBrancaController extends Controller
                 )
                 WHERE DTSAIDA >= TO_DATE(:dataInicio, 'YYYY-MM-DD')
                   AND DTSAIDA <= TO_DATE(:dataFim, 'YYYY-MM-DD')
-                ORDER BY NUMTRANSVENDA
+                ORDER BY NUMTRANSVENDA DESC
                 SQL, [
                 'filial1' => $validated['filial'],
                 'filial2' => $validated['filial'],
