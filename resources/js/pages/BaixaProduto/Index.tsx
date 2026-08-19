@@ -181,6 +181,23 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         return Number.isFinite(valor) && valor > 0 ? valor : undefined;
     };
 
+    // Atalho "<quantidade>*<código>" no campo de código (ex.: "3*7896041110012")
+    // — multiplica a quantidade sem precisar bipar o produto várias vezes
+    // nem confirmar nada, insere direto na lista. Não vale pra Vencimento,
+    // que sempre pede quantidade e data à parte (ver chamada em buscarProduto).
+    const parseMultiplicador = (
+        texto: string,
+    ): { multiplicador: number; codigo: string } | undefined => {
+        const partes = texto.trim().split('*');
+        if (partes.length !== 2) return undefined;
+
+        const multiplicador = parseQuantidade(partes[0]);
+        const codigo = partes[1].trim();
+        if (!multiplicador || !codigo) return undefined;
+
+        return { multiplicador, codigo };
+    };
+
     // Máscara dd/mm/aaaa enquanto digita — só dígitos contam, o resto (as
     // barras) é inserido automaticamente.
     const formatarDataDigitada = (valor: string) => {
@@ -251,12 +268,29 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             return;
         }
 
+        // "<quantidade>*<código>" pula a confirmação de quantidade — não
+        // se aplica a Vencimento, que sempre para pra pedir quantidade e
+        // data à parte.
+        const multiplicado = !ehVencimento
+            ? parseMultiplicador(codAuxiliar)
+            : undefined;
+
+        if (codAuxiliar.includes('*') && !multiplicado) {
+            showAlert(
+                'Formato inválido. Use quantidade*código, ex.: 3*7896041110012.',
+                'warning',
+            );
+            return;
+        }
+
+        const codigoBusca = multiplicado ? multiplicado.codigo : codAuxiliar;
+
         setBuscandoProduto(true);
         try {
             const response = await axios.post<{ produto: Produto }>(
                 baixaProduto.buscarPorCodigo.url(),
                 {
-                    codAuxiliar: codAuxiliar.trim(),
+                    codAuxiliar: codigoBusca.trim(),
                     codFilial: data.codFilial,
                 },
             );
@@ -264,11 +298,20 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             if (response.data.produto) {
                 const produtoBase = {
                     ...response.data.produto,
-                    quantidade: 1,
+                    quantidade: multiplicado ? multiplicado.multiplicador : 1,
                 };
                 setCodAuxiliar('');
 
-                if (ehPorQuilo(produtoBase) || ehVencimento) {
+                if (multiplicado) {
+                    // Quantidade já veio do multiplicador digitado — entra
+                    // direto na lista, sem pausa pra confirmar nada.
+                    adicionarOuSomarProduto(produtoBase);
+                    setUltimoAdicionado(produtoBase);
+
+                    setTimeout(() => {
+                        codAuxiliarInputRef.current?.focus();
+                    }, 100);
+                } else if (ehPorQuilo(produtoBase) || ehVencimento) {
                     // Pausa pra confirmar quantidade (produto por quilo)
                     // e/ou data de vencimento — só entra na lista em
                     // confirmarAdicao().
@@ -535,6 +578,16 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
                                         {ehVencimento &&
                                             ' a data de vencimento'}{' '}
                                         abaixo antes de bipar o próximo produto.
+                                    </p>
+                                )}
+                                {!temPendencia && !ehVencimento && (
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Dica: digite{' '}
+                                        <span className="font-mono">
+                                            quantidade*código
+                                        </span>{' '}
+                                        (ex.: 3*7896041110012) pra baixar já
+                                        multiplicado, sem confirmar.
                                     </p>
                                 )}
                             </div>
