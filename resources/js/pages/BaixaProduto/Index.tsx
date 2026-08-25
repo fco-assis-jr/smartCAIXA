@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import {
     Calendar as CalendarIcon,
     CheckCircle2,
+    Eraser,
     PackageMinus,
     Receipt,
     ScanBarcode,
@@ -35,6 +36,11 @@ import type { SharedData } from '@/types';
 // tipos (o value vem de lá, não é um rótulo livre).
 const TIPO_VENCIMENTO = 'VENCIMENTO';
 
+// Chave do rascunho salvo no localStorage — se o navegador fechar sem
+// querer (ou a aba recarregar) no meio de uma baixa, os dados já digitados
+// (filial, tipo, observação e os produtos já bipados) não se perdem.
+const RASCUNHO_STORAGE_KEY = 'smartcaixa:baixa-produto:rascunho';
+
 type Produto = {
     CODPROD: string;
     CODAUXILIAR: string;
@@ -52,6 +58,13 @@ type Produto = {
 type Props = {
     filiais: ComboboxOption[];
     tiposBaixa: ComboboxOption[];
+};
+
+type Rascunho = {
+    codFilial: string;
+    tipoBaixa: string;
+    observacao: string;
+    produtos: Produto[];
 };
 
 type AlertState = {
@@ -104,6 +117,62 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         tipoBaixa: '',
         observacao: '',
     });
+
+    // Restaura o rascunho salvo (se existir) assim que a página monta —
+    // cobre o caso de fechar o navegador/aba sem querer no meio de uma
+    // baixa. A ref abaixo evita que o efeito de salvar (próximo) rode
+    // nesse primeiro render com os valores ainda vazios (antes da
+    // restauração) e apague o rascunho que acabou de ser lido.
+    const primeiraRenderRef = useRef(true);
+
+    useEffect(() => {
+        try {
+            const salvo = localStorage.getItem(RASCUNHO_STORAGE_KEY);
+            if (!salvo) return;
+
+            const rascunho: Rascunho = JSON.parse(salvo);
+            if (rascunho.codFilial) setData('codFilial', rascunho.codFilial);
+            if (rascunho.tipoBaixa) setData('tipoBaixa', rascunho.tipoBaixa);
+            if (rascunho.observacao) setData('observacao', rascunho.observacao);
+            if (
+                Array.isArray(rascunho.produtos) &&
+                rascunho.produtos.length > 0
+            ) {
+                setProdutos(rascunho.produtos);
+            }
+        } catch (error) {
+            console.error('Erro ao restaurar rascunho da baixa:', error);
+        }
+    }, [setData]);
+
+    // Salva o rascunho a cada mudança relevante — filial, tipo, observação
+    // ou a lista de produtos já bipados. Some do localStorage sozinho
+    // quando não há mais nada preenchido (ex.: depois de "Limpar Lista").
+    useEffect(() => {
+        if (primeiraRenderRef.current) {
+            primeiraRenderRef.current = false;
+            return;
+        }
+
+        const temConteudo =
+            data.codFilial ||
+            data.tipoBaixa ||
+            data.observacao ||
+            produtos.length > 0;
+
+        if (!temConteudo) {
+            localStorage.removeItem(RASCUNHO_STORAGE_KEY);
+            return;
+        }
+
+        const rascunho: Rascunho = {
+            codFilial: data.codFilial,
+            tipoBaixa: data.tipoBaixa,
+            observacao: data.observacao,
+            produtos,
+        };
+        localStorage.setItem(RASCUNHO_STORAGE_KEY, JSON.stringify(rascunho));
+    }, [data.codFilial, data.tipoBaixa, data.observacao, produtos]);
 
     // Função auxiliar para mostrar alertas - memoizada
     const showAlert = useCallback(
@@ -169,6 +238,12 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     // A filial e o tipo de baixa travam assim que o primeiro produto é adicionado —
     // uma baixa não pode misturar filiais ou tipos diferentes no mesmo relatório.
     const contextoTravado = produtos.length > 0;
+
+    // Só mostra o botão de apagar rascunho quando há de fato algo pra
+    // apagar — evita um botão "morto" numa tela recém-aberta e limpa.
+    const temRascunho = Boolean(
+        data.codFilial || data.tipoBaixa || data.observacao || contextoTravado,
+    );
 
     const filialLabel = filiais.find((f) => f.value === data.codFilial)?.label;
     const tipoBaixaLabel = tiposBaixa.find(
@@ -450,6 +525,15 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
         setQuantidadeDigitada('1');
     };
 
+    // Botão "borracha": apaga de vez o rascunho salvo, inclusive filial,
+    // tipo de baixa e observação — diferente de "Limpar Lista" (que só
+    // esvazia os produtos e deixa filial/tipo preenchidos pra continuar).
+    const limparRascunho = () => {
+        limparLista();
+        setData({ codFilial: '', tipoBaixa: '', observacao: '' });
+        localStorage.removeItem(RASCUNHO_STORAGE_KEY);
+    };
+
     const finalizarBaixa = async () => {
         if (produtos.length === 0) {
             showAlert(
@@ -492,10 +576,23 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
             <Head title="Baixa Produto" />
 
             <div className="px-4 py-6">
-                <Heading
-                    title="Baixa Produto"
-                    description="Escaneie ou digite o código dos produtos para registrar a baixa"
-                />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <Heading
+                        title="Baixa Produto"
+                        description="Escaneie ou digite o código dos produtos para registrar a baixa"
+                    />
+                    {temRascunho && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={limparRascunho}
+                            title="Apaga o rascunho salvo (filial, tipo, observação e produtos)"
+                        >
+                            <Eraser className="size-4" />
+                            Limpar rascunho salvo
+                        </Button>
+                    )}
+                </div>
 
                 <div className="mt-6 space-y-4">
                     {/* Contexto da baixa: filial, tipo e observação */}
