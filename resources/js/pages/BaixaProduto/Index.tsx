@@ -280,7 +280,12 @@ export default function BaixaProduto({ filiais, tiposBaixa }: Props) {
     // bipar/digitar o código — no Enter, o produto entra direto na lista
     // com essa quantidade. Não vale em Vencimento, que sempre pede
     // quantidade e data à parte.
-    const digitarCodAuxiliar = (valor: string) => {
+    const digitarCodAuxiliar = (valorDigitado: string) => {
+        // Código só existe como número (CODAUXILIAR é NUMBER no Oracle) — só
+        // dígito e "*" (o atalho de multiplicação) passam; qualquer outro
+        // caractere colado/digitado (letra, ponto, vírgula etc.) é descartado.
+        const valor = valorDigitado.replace(/[^0-9*]/g, '');
+
         if (ehVencimento || !valor.includes('*')) {
             setCodAuxiliar(valor);
             return;
