@@ -85,12 +85,7 @@ class BaixaProdutoController extends Controller
     }
 
     /**
-     * Buscar produto por código auxiliar.
-     *
-     * Consulta fornecida pelo usuário (ficha completa de produto, com preço,
-     * custo, estoque, situação e restrições de venda) — filial e código
-     * auxiliar são os únicos parâmetros; a região usada nas funções de
-     * preço/margem (BUSCAPRECOS, BUSCAMARGEM) é sempre '1', fixo.
+     * Buscar produto por código auxiliar
      */
     public function buscarPorCodigoAuxiliar(Request $request)
     {
@@ -112,162 +107,32 @@ class BaixaProdutoController extends Controller
         }
 
         try {
-            $produto = DB::connection('oracle')->selectOne(<<<'SQL'
-                SELECT TBLPRODUT.DESCRICAO,
-                       PCEMBALAGEM.CODPROD,
-                       PCEMBALAGEM.DESTINOOFERTAATAC,
-                       PCEMBALAGEM.DESTINOOFERTAVAREJO,
-                       TO_CHAR (PCEMBALAGEM.CODAUXILIAR) CODAUXILIAR,
-                       PCEMBALAGEM.EMBALAGEM,
-                       PCEMBALAGEM.QTUNIT,
-                       PCEMBALAGEM.UNIDADE,
-                       (CASE
-                            WHEN PCEMBALAGEM.DTINATIVO IS NULL THEN 'ATIVA'
-                            ELSE 'INATIVA'
-                        END)
-                           SITUACAO,
-                       (CASE WHEN TBLPRODUT.OBS = 'PV' THEN 'S' ELSE 'N' END)
-                           PROIBIDOPRAVENDA,
-                       (CASE WHEN TBLPRODUT.OBS2 = 'FL' THEN 'S' ELSE 'N' END)
-                           FORADELINHA,
-                       TBLPRODUT.MARCA,
-                       NVL (COLUNA_PRECO (TBLPRECO.PRECO, 'PVENDA'), 0)
-                           PVENDA,
-                       NVL (COLUNA_PRECO (TBLPRECO.PRECO, 'PVENDAATAC'), 0)
-                           PVENDAATAC,
-                       TBLPRODUT.DIRFOTOPROD,
-                       TBLTRIBUTACAO.CODICMTAB,
-                       TBLTRIBUTACAO.CODECF,
-                       PCEMBALAGEM.DESCRICAOECF,
-                       PCEMBALAGEM.PERVARIACAOPTABELA,
-                       (CASE
-                            WHEN PKG_ESTOQUE.ESTOQUE_DISPONIVEL (PCEMBALAGEM.CODPROD,
-                                                                 PCEMBALAGEM.CODFILIAL,
-                                                                 'V') >
-                                 0
-                            THEN
-                                'SIM'
-                            ELSE
-                                'NAO'
-                        END)
-                           PRODUTOCOMESTOQUE,
-                       (CASE WHEN TBLPRODUT.DTEXCLUSAO IS NULL THEN 'NAO' ELSE 'SIM' END)
-                           PRODUTOEXCLUIDO,
-                       PKG_ESTOQUE.ESTOQUE_DISPONIVEL (PCEMBALAGEM.CODPROD,
-                                                       PCEMBALAGEM.CODFILIAL,
-                                                       'V')
-                           QTESTOQUEDISPONIVEL,
-                       TBLPRODUT.INFORMACOESTECNICAS,
-                       CASE
-                           WHEN (SELECT PCCONSUM.SUGVENDA FROM PCCONSUM) = 1
-                           THEN
-                               ROUND (NVL (PCEST.CUSTOREAL, 0), 2)
-                           WHEN (SELECT PCCONSUM.SUGVENDA FROM PCCONSUM) = 2
-                           THEN
-                               ROUND (NVL (PCEST.CUSTOFIN, 0), 2)
-                           ELSE
-                               ROUND (NVL (PCEST.CUSTOULTENT, 0), 2)
-                       END
-                           CUSTO,
-                       NVL (TBLPCPRODFILIAL.REVENDA, 'S')
-                           REVENDAFILIAL,
-                       NVL (TBLPRODUT.REVENDA, 'S')
-                           REVENDAPROD,
-                       NVL (TBLPCPRODFILIAL.ATIVO, 'S')
-                           PRODUTOATIVO,
-                       PCEST.CUSTOREAL,
-                       PCEST.CUSTOFIN,
-                       PCEST.CUSTOCONT,
-                       PCEST.CUSTOULTENT,
-                       TBLPRODUT.NBM
-                FROM PCEMBALAGEM,
-                     PCEST,
-                     PCREGIAO,
-                     (SELECT TBLCLASSIFICMERC.CODAUXILIAR,
-                             TBLCLASSIFICMERC.CODFILIAL,
-                             PCTRIBUT.CODICMTAB,
-                             PCTRIBUT.CODECF,
-                             PCEMBALAGEM.CODPROD
-                      FROM PCEMBALAGEM,
-                           PCPARAMFILIAL TBL_MARGEM,
-                           PCPARAMFILIAL TBL_TRIBUT,
-                           PCPARAMFILIAL TBL_TRIBUF,
-                           (TABLE (BUSCAMARGEM (PCEMBALAGEM.CODFILIAL,
-                                                PCEMBALAGEM.CODPROD,
-                                                PCEMBALAGEM.CODAUXILIAR,
-                                                '1',
-                                                PCEMBALAGEM.PERVARIACAOPTABELA,
-                                                NVL (TBL_MARGEM.VALOR, 'N'),
-                                                NVL (TBL_TRIBUT.VALOR, 'N'),
-                                                NVL (TBL_TRIBUF.VALOR, 'N'))))
-                           TBLCLASSIFICMERC,
-                           PCTRIBUT
-                      WHERE     PCEMBALAGEM.CODFILIAL = TBL_MARGEM.CODFILIAL
-                            AND PCEMBALAGEM.CODFILIAL = TBLCLASSIFICMERC.CODFILIAL
-                            AND TBL_MARGEM.CODFILIAL = TBL_TRIBUT.CODFILIAL
-                            AND TBL_MARGEM.NOME = 'UTILIZAMARGEMSUBCAT'
-                            AND TBL_TRIBUT.NOME = 'UTILIZATRIBUTSUBCAT'
-                            AND NVL (TBL_TRIBUF.NOME, 'CON_USATRIBUTACAOPORUF') =
-                                'CON_USATRIBUTACAOPORUF'
-                            AND TBL_TRIBUF.CODFILIAL = '99'
-                            AND PCTRIBUT.CODST = TBLCLASSIFICMERC.CODST
-                            AND ((PCEMBALAGEM.CODFILIAL = :codFilial1) OR (:codFilial2 = '99'))
-                            AND PCEMBALAGEM.CODPROD IN
-                                    (SELECT E.CODPROD
-                                     FROM PCEMBALAGEM E
-                                     WHERE E.CODAUXILIAR = :codAuxiliar1 AND E.CODFILIAL = :codFilial3))
-                     TBLTRIBUTACAO,
-                     (SELECT PCPRODUT.CODPROD,
-                             PCPRODUT.CODINTERNO,
-                             PCPRODUT.DESCRICAO,
-                             PCPRODUT.DIRFOTOPROD,
-                             PCPRODUT.OBS,
-                             PCPRODUT.OBS2,
-                             PCMARCA.MARCA,
-                             PCPRODUT.DTEXCLUSAO,
-                             PCPRODUT.INFORMACOESTECNICAS,
-                             PCPRODUT.REVENDA,
-                             PCPRODUT.NBM
-                      FROM PCPRODUT, PCMARCA
-                      WHERE PCPRODUT.CODMARCA = PCMARCA.CODMARCA(+)) TBLPRODUT,
-                     (SELECT CODPROD, CODFILIAL, ATIVO, REVENDA FROM PCPRODFILIAL)
-                     TBLPCPRODFILIAL,
-                     (SELECT E.CODAUXILIAR,
-                             E.CODPROD,
-                             E.CODFILIAL,
-                             BUSCAPRECOS (E.CODFILIAL,
-                                          '1',
-                                          E.CODAUXILIAR,
-                                          TRUNC (SYSDATE)) PRECO
-                      FROM PCEMBALAGEM E) TBLPRECO
-                WHERE     PCEMBALAGEM.CODPROD = TBLPRODUT.CODPROD
-                      AND (    PCEMBALAGEM.CODFILIAL = TBLTRIBUTACAO.CODFILIAL(+)
-                           AND PCEMBALAGEM.CODPROD = TBLTRIBUTACAO.CODPROD(+)
-                           AND PCEMBALAGEM.CODAUXILIAR = TBLTRIBUTACAO.CODAUXILIAR(+))
-                      AND TBLPRECO.CODFILIAL = PCEMBALAGEM.CODFILIAL
-                      AND TBLPRECO.CODAUXILIAR = PCEMBALAGEM.CODAUXILIAR
-                      AND PCEST.CODPROD = PCEMBALAGEM.CODPROD
-                      AND PCEST.CODFILIAL = PCEMBALAGEM.CODFILIAL
-                      AND TBLPCPRODFILIAL.CODPROD = PCEMBALAGEM.CODPROD
-                      AND TBLPCPRODFILIAL.CODFILIAL = PCEMBALAGEM.CODFILIAL
-                      AND PCREGIAO.NUMREGIAO = '1'
-                      AND ((PCEMBALAGEM.CODFILIAL = :codFilial4) OR (:codFilial5 = '99'))
-                      AND PCEMBALAGEM.CODPROD IN
-                              (SELECT E.CODPROD
-                               FROM PCEMBALAGEM E
-                               WHERE E.CODAUXILIAR = :codAuxiliar2 AND E.CODFILIAL = :codFilial6)
-                SQL, [
-                'codFilial1' => $validated['codFilial'],
-                'codFilial2' => $validated['codFilial'],
-                'codAuxiliar1' => $validated['codAuxiliar'],
-                'codFilial3' => $validated['codFilial'],
-                'codFilial4' => $validated['codFilial'],
-                'codFilial5' => $validated['codFilial'],
-                'codAuxiliar2' => $validated['codAuxiliar'],
-                'codFilial6' => $validated['codFilial'],
-            ]);
+            $query = DB::connection('oracle')
+                ->table('PCPRODUT as P')
+                ->join('PCEMBALAGEM as E', 'P.CODPROD', '=', 'E.CODPROD')
+                ->select([
+                    'E.CODFILIAL',
+                    'P.CODPROD',
+                    'P.DESCRICAO',
+                    'E.EMBALAGEM',
+                    'E.UNIDADE',
+                    'E.CODAUXILIAR',
+                    DB::raw("DECODE(TRIM(P.OBS2), NULL, 'N', 'S') AS FORALINHA"),
+                    DB::raw("ROUND(COLUNA_PRECO(BUSCAPRECOS(E.CODFILIAL, '1', E.CODAUXILIAR, SYSDATE), 'PVENDA'), 2) AS PRECO"),
+                ])
+                ->whereNull('P.DTEXCLUSAO')
+                ->where('E.CODFILIAL', $validated['codFilial'])
+                // Busca só pelo código auxiliar (código de barras) da
+                // PCEMBALAGEM — não pelo CODPROD. Os dois espaços de código
+                // podem colidir (ex.: CODAUXILIAR "970" é um produto, e
+                // CODPROD 970 é outro completamente diferente), então
+                // aceitar as duas coisas na mesma busca já trouxe o produto
+                // errado pro operador.
+                ->where('E.CODAUXILIAR', $validated['codAuxiliar']);
 
-            if (! $produto || ($produto->produtoexcluido ?? 'NAO') === 'SIM') {
+            $produto = $query->first();
+
+            if (! $produto) {
 
                 return response()->json([
                     'error' => 'Produto não encontrado',
@@ -276,22 +141,20 @@ class BaixaProdutoController extends Controller
             }
 
             // Oracle devolve texto em Windows-1252 — converter antes do json()
-            // ou uma descrição/embalagem com acento quebra a codificação da
-            // resposta (Malformed UTF-8 characters).
+            // ou uma descrição com acento quebra a codificação da resposta
+            // (Malformed UTF-8 characters).
             $descricao = $produto->descricao ?? '';
-            $embalagem = $produto->embalagem ?? '';
-            $unidade = $produto->unidade ?? '';
 
             return response()->json([
                 'produto' => [
-                    'CODFILIAL' => $validated['codFilial'],
+                    'CODFILIAL' => $produto->codfilial ?? '',
                     'CODPROD' => $produto->codprod ?? '',
                     'DESCRICAO' => is_string($descricao) ? iconv('Windows-1252', 'UTF-8//IGNORE', $descricao) : $descricao,
-                    'EMBALAGEM' => is_string($embalagem) ? iconv('Windows-1252', 'UTF-8//IGNORE', $embalagem) : $embalagem,
-                    'UNIDADE' => is_string($unidade) ? iconv('Windows-1252', 'UTF-8//IGNORE', $unidade) : $unidade,
+                    'EMBALAGEM' => $produto->embalagem ?? '',
+                    'UNIDADE' => $produto->unidade ?? '',
                     'CODAUXILIAR' => $produto->codauxiliar ?? '',
-                    'FORALINHA' => $produto->foradelinha ?? 'N',
-                    'PRECO' => (float) ($produto->pvenda ?? 0),
+                    'FORALINHA' => $produto->foralinha ?? 'N',
+                    'PRECO' => (float) ($produto->preco ?? 0),
                 ],
             ]);
         } catch (\Throwable $e) {
