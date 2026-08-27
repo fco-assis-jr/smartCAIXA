@@ -275,13 +275,20 @@ class BaixaProdutoController extends Controller
                 ], 404);
             }
 
+            // Oracle devolve texto em Windows-1252 — converter antes do json()
+            // ou uma descrição/embalagem com acento quebra a codificação da
+            // resposta (Malformed UTF-8 characters).
+            $descricao = $produto->descricao ?? '';
+            $embalagem = $produto->embalagem ?? '';
+            $unidade = $produto->unidade ?? '';
+
             return response()->json([
                 'produto' => [
                     'CODFILIAL' => $validated['codFilial'],
                     'CODPROD' => $produto->codprod ?? '',
-                    'DESCRICAO' => $produto->descricao ?? '',
-                    'EMBALAGEM' => $produto->embalagem ?? '',
-                    'UNIDADE' => $produto->unidade ?? '',
+                    'DESCRICAO' => is_string($descricao) ? iconv('Windows-1252', 'UTF-8//IGNORE', $descricao) : $descricao,
+                    'EMBALAGEM' => is_string($embalagem) ? iconv('Windows-1252', 'UTF-8//IGNORE', $embalagem) : $embalagem,
+                    'UNIDADE' => is_string($unidade) ? iconv('Windows-1252', 'UTF-8//IGNORE', $unidade) : $unidade,
                     'CODAUXILIAR' => $produto->codauxiliar ?? '',
                     'FORALINHA' => $produto->foradelinha ?? 'N',
                     'PRECO' => (float) ($produto->pvenda ?? 0),
